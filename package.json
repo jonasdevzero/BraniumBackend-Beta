@@ -1,0 +1,33 @@
+{
+  "name": "braniumbackend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "tsnd --transpile-only --ignore-watch node_modules src/index.ts",
+    "build": "tsc",
+    "typeorm": "tsnd ./node_modules/typeorm/cli.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "jonasdevzero",
+  "license": "ISC",
+  "devDependencies": {
+    "dotenv": "^10.0.0",
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^4.3.5"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "fastify": "^3.19.2",
+    "fastify-cors": "^6.0.2",
+    "fastify-jwt": "^3.0.0",
+    "fastify-multipart": "^4.0.7",
+    "fastify-static": "^4.2.2",
+    "pg": "^8.6.0",
+    "reflect-metadata": "^0.1.13",
+    "typeorm": "^0.2.34"
+  }
+}
