@@ -7,6 +7,7 @@ import cluster from 'cluster'
 import { cpus } from 'os'
 import path from 'path'
 import routes from './routes'
+import socket from './socket'
 
 const port = process.env.PORT || 5000
 const host = process.env.HOST || '127.0.0.1'
@@ -35,6 +36,8 @@ if (cluster.isPrimary) {
             server.log.error(err)
             process.exit(1)
         }
+        
+        socket.connect()
         server.log.info(`server listening on ${address}`)
     })
 }

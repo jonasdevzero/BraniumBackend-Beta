@@ -4,6 +4,7 @@ import { Socket as RawSocket } from 'net'
 export default class SocketClient {
     raw = new RawSocket()
     private events = new Map()
+    private isConnecting = false
     connected = false
     url 
     options: { [key: string]: any }
@@ -14,6 +15,9 @@ export default class SocketClient {
     }
    
     connect(): Promise<this> {
+        if (this.isConnecting || this.connected) return new Promise((resolve) => resolve(this));
+        this.isConnecting = false
+
         const headers = {
             ...this.options?.headers,
             Connection: 'Upgrade',
@@ -28,6 +32,7 @@ export default class SocketClient {
 
             req.once("upgrade", (res, socket) => {
                 this.raw = socket
+                this.isConnecting = false
                 this.connected = true
                 this.attachEvents()
                 resolve(this)
