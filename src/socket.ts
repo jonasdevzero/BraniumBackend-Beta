@@ -1,7 +1,9 @@
-import http from 'http'
-import { Socket as RawSocket } from 'net'
+import http from "http"
+import { Socket as RawSocket } from "net"
 
-export default class SocketClient {
+const webSocketURL = process.env.WEBSOCKET_SERVER || "http://localhost:9000"
+
+class SocketClient {
     raw = new RawSocket()
     private events = new Map()
     private isConnecting = false
@@ -20,9 +22,9 @@ export default class SocketClient {
 
         const headers = {
             ...this.options?.headers,
-            Connection: 'Upgrade',
-            upgrade: 'websocket',
-            'Sec-Websocket-Protcol': 'api'
+            Connection: "Upgrade",
+            upgrade: "websocket",
+            "Sec-Websocket-Protocol": "api"
         }
 
         const req = http.request(this.url, { headers })
@@ -32,8 +34,8 @@ export default class SocketClient {
             req.on("error", (error: any) => {
                 this.isConnecting = false 
 
-                if (error.code === 'ECONNREFUSED') {
-                    console.log('[Socket] {Erro}: Websocket Server is not working!')
+                if (error.code === "ECONNREFUSED") {
+                    console.log("[Socket] {Erro}: Websocket Server maybe not working!")
                     this.reconnect()
                     return
                 }
@@ -42,7 +44,7 @@ export default class SocketClient {
             })
 
             req.once("upgrade", (res, socket) => {
-                console.log('[Socket] {Connected} to server!!')
+                console.log("[Socket] {Connected} to server!!")
 
                 this.raw = socket
                 this.isConnecting = false
@@ -68,16 +70,16 @@ export default class SocketClient {
         })
 
         this.raw.on("error", (error: any) => {
-            if (error.code === 'ECONNRESET') {
+            if (error.code === "ECONNRESET") {
                 this.connected = false
                 this.raw.destroy()
 
-                console.log('[Socket] {Disconnect} from server. Trying to reconnect!!')
+                console.log("[Socket] {Disconnect} from server. Trying to reconnect!!")
                 this.reconnect()
                 return
             }
 
-            console.error('[Socket]', error)
+            console.error("[Socket]", error)
         })
 
         this.raw.on("end", () => {
@@ -116,7 +118,7 @@ export default class SocketClient {
     emit(event: string, ...args: any[]) {
         // This allows callback functions between the client and server
         args = args.map((m, i) => {
-            if (typeof m == 'function') {
+            if (typeof m == "function") {
                 const callbackEvent = `${event}::callback:${i}`
                 this.once(callbackEvent, (message) => { m(message) })
                 return callbackEvent
@@ -128,3 +130,5 @@ export default class SocketClient {
         return this
     }
 }
+
+export default new SocketClient(webSocketURL)
