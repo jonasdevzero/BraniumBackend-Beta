@@ -31,13 +31,13 @@ if (cluster.isPrimary) {
     server.register(fastifyMultipart, { addToBody: true })
     server.register(routes)
 
-    server.listen(port, host, (err, address) => {
+    server.listen(port, host, async (err, address) => {
         if (err) {
             server.log.error(err)
             process.exit(1)
         }
-        
-        socket.connect()
+
+        await socket.connect()
         server.log.info(`server listening on ${address}`)
     })
 }

@@ -17,7 +17,7 @@ export default function routes(fastify: FastifyInstance, _opts: FastifyPluginOpt
     })
 
     fastify.get('/', (req: ServerRequest, reply: FastifyReply) => {
-        socket.emit('message', 'New acces in [/] page', () => {})
+        socket.emit('message', 'New access in [/] page', () => {})
 
         reply.status(200).send({ message: 'ok' })
     })
