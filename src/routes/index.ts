@@ -1,8 +1,8 @@
 import { FastifyPluginOptions, FastifyReply, FastifyInstance } from "fastify"
 import fastifyJwt from "fastify-jwt"
-import socket from "../socket"
+import userRoutes from "./user"
 
-const secret = process.env.USER_SECRET || "z"
+const secret = process.env.USER_SECRET || "zero"
 const errorJwtMessages = {
     badRequestErrorMessage: "Format is Authorization: Bearer [token]",
     noAuthorizationInHeaderMessage: "Autorization header is missing!",
@@ -15,11 +15,9 @@ export default function routes(fastify: FastifyInstance, _opts: FastifyPluginOpt
         messages: errorJwtMessages,
     })
 
-    fastify.get("/", (req, reply: FastifyReply) => {
-        socket.emit("message", "New access in [/] page", () => {})
+    fastify.get("/", (req, reply: FastifyReply) => { reply.status(200).send({ message: "ok" }) })
 
-        reply.status(200).send({ message: "ok" })
-    })
+    fastify.register(userRoutes, { prefix: "/user" })
 
     done()
 }

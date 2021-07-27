@@ -18,11 +18,11 @@ export default class ContactInvitation extends BaseEntity {
     @Column()
     created_at: Date;    
 
-    @ManyToOne(_ => User, user => user.contact_invitation)
+    @ManyToOne(_ => User, user => user.contact_invitations)
     @JoinColumn({ name: "receiver_id" })
     user: User;
 
-    @ManyToOne(_ => User, user => user.invitation_sent)
+    @ManyToOne(_ => User, user => user.invitations_sent)
     @JoinColumn({ name: "sender_id" })
     sender: User;
 

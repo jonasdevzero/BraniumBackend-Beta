@@ -25,17 +25,17 @@ export default class Contact extends BaseEntity {
     @Column()
     you_blocked: boolean;
 
-    @ManyToOne(_ => User, user => user.contact, { cascade: ["update"] })
+    @ManyToOne(_ => User, user => user.contacts, { cascade: ["update"] })
     @JoinColumn({ name: "user_id" })
     user: User;
 
-    @ManyToOne(_ => User, user => user.self_contact, { cascade: ["update"] })
+    @ManyToOne(_ => User, user => user.self_contacts, { cascade: ["update"] })
     @JoinColumn({ name: "contact_user_id" })
     contact: User;
 
     @OneToMany(_ => ContactMessage, c_message => c_message.contact)
     @JoinColumn({ name: "contact_id" })
-    message: ContactMessage[];
+    messages: ContactMessage[];
 
     @BeforeInsert()
     private beforeInsert() {

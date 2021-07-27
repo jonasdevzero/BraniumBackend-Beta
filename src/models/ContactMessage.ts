@@ -27,7 +27,7 @@ export default class ContactMessage extends BaseEntity {
     @DeleteDateColumn()
     deleted_at: Date;
 
-    @ManyToOne(_ => Contact, contact => contact.message)
+    @ManyToOne(_ => Contact, contact => contact.messages)
     @JoinColumn({ name: "contact_id" })
     contact: Contact;
 }

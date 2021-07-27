@@ -39,18 +39,18 @@ export default class User extends BaseEntity {
 
     @OneToMany(_ => Contact, contact => contact.user)
     @JoinColumn({ name: "user_id" })
-    contact: Contact[];
+    contacts: Contact[];
     
     @OneToMany(_ => Contact, contact => contact.contact)
     @JoinColumn({ name: "contact_user_id" })
-    self_contact: Contact[];
+    self_contacts: Contact[];
 
     @OneToMany(_ => ContactInvitation, c_invitation => c_invitation.user)
     @JoinColumn({ name: "receiver_id" })
-    contact_invitation: ContactInvitation[];
+    contact_invitations: ContactInvitation[];
 
     @OneToMany(_ => ContactInvitation, c_invitation => c_invitation.sender)
-    invitation_sent: ContactInvitation[];
+    invitations_sent: ContactInvitation[];
 
     @BeforeInsert()
     private beforeInsert() {
