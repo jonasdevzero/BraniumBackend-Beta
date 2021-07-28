@@ -1,6 +1,7 @@
 import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, DeleteDateColumn, OneToMany, JoinColumn, BeforeInsert, BeforeUpdate } from "typeorm"
+import userUtil from "../utils/userUtil"
 import Contact from "./Contact"
-import ContactInvitation from "./ContactInvitation";
+import ContactInvitation from "./ContactInvitation"
 
 @Entity("user")
 export default class User extends BaseEntity {
@@ -56,7 +57,9 @@ export default class User extends BaseEntity {
     private beforeInsert() {
         const date = new Date()
         this.created_at = date 
-        this.updated_at = date 
+        this.updated_at = date
+
+        this.password = userUtil.encryptPassword(this.password)
     };
 
     @BeforeUpdate()
