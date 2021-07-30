@@ -1,32 +1,52 @@
 import { FastifyPluginOptions, FastifyInstance } from "fastify"
 import userController from "../controllers/user"
 import authHook from "../hooks/auth"
-import userScheme from "./_scheme/userScheme"
+import userSchema from "./_schema/userSchema"
 
 export default function userRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions, done: (err?: Error) => void) {
-    fastify.addHook("onError", (req, reply, err, done) => {
-        reply.status(400).send({ message: "Error on send request", err })
-    })
+    fastify.get("/", { 
+        schema: userSchema.index 
+    }, userController.index)
 
-    fastify.get("/", { schema: userScheme.index }, userController.index)
+    fastify.get("/search", { 
+        schema: userSchema.search, 
+        preValidation: authHook 
+    }, userController.search)
 
-    fastify.get("/search", { preValidation: authHook }, userController.search)
+    fastify.post("/", { 
+        schema: userSchema.create 
+    }, userController.create)
 
-    fastify.post("/", { schema: userScheme.create }, userController.create)
+    fastify.post("/login", { 
+        schema: userSchema.login 
+    }, userController.login)
 
-    fastify.post("/login", userController.login)
+    fastify.post("/auth", { 
+        schema: userSchema.auth,
+        preValidation: authHook 
+    }, userController.auth)
 
-    fastify.post("/auth", { preValidation: authHook }, userController.auth)
+    fastify.put("/", {
+        schema: userSchema.update,
+        preValidation: authHook 
+    }, userController.update)
 
-    fastify.put("/", { preValidation: authHook }, userController.update)
+    fastify.post("/forgot_password", { 
+        schema: userSchema.forgotPassword 
+    }, userController.forgotPassword)
 
-    fastify.post("/forgot_password", userController.forgotPassword)
+    fastify.post("/reset_password", { 
+        schema: userSchema.resetPassword 
+    }, userController.resetPassword)
 
-    fastify.post("/reset_password", userController.resetPassword)
+    fastify.post("/delete", {
+        schema: userSchema.Sdelete,
+        preValidation: authHook 
+    }, userController.delete)
 
-    fastify.post("/delete", { preValidation: authHook }, userController.delete)
-
-    fastify.post("/restore", userController.restore)
+    fastify.post("/restore", { 
+        schema: userSchema.restore 
+    }, userController.restore)
 
     done()
 }
