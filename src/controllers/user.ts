@@ -25,12 +25,15 @@ export default {
 
             const userRepository = getRepository(User)
             const [user, users] = await Promise.all([
-                userRepository.findOne(id, { relations: ["contact"] }),
-                userRepository.find({ where: { username: ILike(`%${username}%`) }, take: 30 }),
+                userRepository.findOne(id, { relations: ["contacts"], withDeleted: true }),
+                userRepository.find({ where: { username: ILike(`%${username}%`) }, take: 20 }),
             ])
 
             if (!user)
-                return reply.status(200).send({ message: "Unexpected Error" });
+                return reply.status(500).send({ message: "Conta não encontrada!" })
+
+            if (user.deleted_at)
+                return reply.status(400).send({ message: "Sua conta foi deletada! Restaure-a!" })
 
             const existentContacts = user.contacts.map(c => c.contact_user_id)
             existentContacts.push(id)
@@ -54,21 +57,21 @@ export default {
                 confirmPassword: yup.string().min(6).required("Preencha o campo 'confirmar senha'"),
                 password: yup.string().min(6, "A senha deve ter no mínimo 6 caracteres").required("Preencha o campo 'senha'"),
                 email: yup.string().lowercase().email("Formatação de email incorreta").required("Preencha o campo 'email'"),
-                username: yup.string().lowercase().min(4, "O nome de usuário de ter no mínimo 4 caracteres").required("Preencha o campo 'username'"),
+                username: yup.string().lowercase().min(4, "O nome de usuário deve ter no mínimo 4 caracteres").required("Preencha o campo 'username'"),
                 name: yup.string().required("Preencha o campo 'nome'"),
             })
-            
-            let validationError: any = {}
+
+            let validationError: any = undefined
             const userRepository = getRepository(User)
             const [existsUsername, existsEmail] = await Promise.all([
-                userRepository.findOne({ username }),
-                userRepository.findOne({ email }),
+                userRepository.findOne({ where: { username }, withDeleted: true }),
+                userRepository.findOne({ where: { email }, withDeleted: true }),
                 schema.validate(req.body).catch(err => validationError = err)
             ])
 
-            if (validationError) 
-                return reply.status(400).send({ message: validationError?.errors[0] })
-            
+            if (validationError)
+                return reply.status(400).send({ message: validationError.errors[0] })
+
             if (existsUsername)
                 return reply.status(400).send({ message: "Username em uso" })
 
@@ -91,19 +94,16 @@ export default {
             const userRepository = getRepository(User)
 
             const target = /^[a-z0-9.]+@[a-z0-9]+\.[a-z]+(\.[a-z]+)?$/i.test(ref) ? "email" : "username"
-            const [user, userDeleted] = await Promise.all([
-                userRepository.findOne({ [target]: ref }),
-                userRepository.findOne({ where: { [target]: ref }, withDeleted: true })
-            ])
+            const user = await userRepository.findOne({ where: { [target]: ref }, withDeleted: true })
 
             if (!user)
-                return reply.status(400).send({ message: `Incorrect ${target}` })
+                return reply.status(400).send({ message: `'${target}' incorreto` })
 
-            if (userDeleted)
-                return reply.status(400).send({ message: "Account deleted! You need restore" })
+            if (user.deleted_at)
+                return reply.status(400).send({ message: "Sua conta foi deletada! Restaure-a!" })
 
             if (!userUtil.comparePasswords(password, user.password))
-                return reply.status(400).send({ message: "Incorrect password" })
+                return reply.status(401).send({ message: "Senha Incorreta" })
 
             const token = await reply.jwtSign({ id: user.id }, { expiresIn: 86400000 })
             reply.status(200).send({ token })
@@ -114,13 +114,16 @@ export default {
 
     async auth(req: ServerRequest, reply: ServerReply) {
         try {
-            const id = req.user
+            const id = req.user.toString()
 
             const userRepository = getRepository(User)
-            const user = await userRepository.findOne({
-                where: id,
-                relations: ["contacts", "contacts.contact", "contact_invitations", "contact_invitations.sender"]
+            const user = await userRepository.findOne(id, {
+                relations: ["contacts", "contacts.contact", "contact_invitations", "contact_invitations.sender"],
+                withDeleted: true
             })
+
+            if (user?.deleted_at)
+                return reply.status(400).send({ message: "Sua conta foi deletada! Restaure-a!" })
 
             reply.status(200).send({ user, auth: true })
         } catch (error) {
@@ -141,10 +144,13 @@ export default {
             const { email } = req.body
 
             const userRepository = getRepository(User)
-            const user = await userRepository.findOne({ where: { email } })
+            const user = await userRepository.findOne({ where: { email }, withDeleted: true })
 
             if (!user)
-                return reply.status(400).send({ message: 'User not exists' })
+                return reply.status(400).send({ message: 'Conta não encontrada!' })
+
+            if (user.deleted_at)
+                return reply.status(400).send({ message: "Sua conta foi deletada! Restaure-a!" })
 
             const reset_token = userUtil.generateHash()
             const expire_token = new Date().setHours(new Date().getHours() + 1)
@@ -159,7 +165,7 @@ export default {
                 html: `<h1>Click <a href="${process.env.CLIENT_URL}/resetPassword/${reset_token}">here</a> to reset your password</h1>`,
             })
 
-            reply.status(200).send({ message: 'Check your email' })
+            reply.status(200).send({ message: 'Verifique seu email' })
         } catch (error) {
             reply.status(500).send({ message: "Internal Server Error", error })
         }
@@ -170,20 +176,20 @@ export default {
             const { password, confirmPassword, reset_token } = req.body
 
             if (password !== confirmPassword)
-                return reply.status(400).send({ message: 'Password are different' })
+                return reply.status(400).send({ message: 'Senhas diferentes' })
 
             const userRepository = getRepository(User)
             const user = await userRepository.findOne({ where: { reset_token } })
 
             if (!user)
-                return reply.status(400).send({ message: 'Invalid token' })
+                return reply.status(400).send({ message: 'Token inválido' })
 
             const now = new Date()
             if (now > user.expire_token)
-                return reply.status(400).send({ message: 'Token expired' })
+                return reply.status(400).send({ message: 'Token expirado' })
 
             await userRepository.update(user, { password: userUtil.encryptPassword(password), reset_token: undefined, expire_token: undefined })
-            reply.status(200).send({ message: 'Password chaged with success!' })
+            reply.status(200).send({ message: 'Senha alterada com sucesso!' })
         } catch (error) {
             reply.status(500).send({ message: "Internal Server Error", error })
         }
@@ -195,13 +201,16 @@ export default {
             const { password } = req.body
 
             const userRepository = getRepository(User)
-            const user = await userRepository.findOne(id)
+            const user = await userRepository.findOne(id, { withDeleted: true })
 
             if (!user)
-                return reply.status(500).send({ message: 'Unexpected error, Try again!' })
+                return reply.status(500).send({ message: 'Usuário não encontrado!' })
+
+            if (user.deleted_at)
+                return reply.status(400).send({ message: "Conta já deletada!" })
 
             if (!userUtil.comparePasswords(password, user.password))
-                return reply.status(401).send({ message: 'Incorrect password' })
+                return reply.status(401).send({ message: 'Senha Incorreta' })
 
             await userRepository.softDelete(user)
 
@@ -219,13 +228,13 @@ export default {
             const user = await userRepository.findOne({ where: { username }, withDeleted: true })
 
             if (!user)
-                return reply.status(404).send({ message: 'User not found' })
+                return reply.status(404).send({ message: 'Usuário não encontrado!' })
 
             if (!user.deleted_at)
-                return reply.status(400).send({ message: 'User not deleted' })
+                return reply.status(400).send({ message: 'Conta não deletada!' })
 
             if (!userUtil.comparePasswords(password, user.password))
-                return reply.status(401).send({ message: 'Incorrect password' })
+                return reply.status(401).send({ message: 'Senha Incorreta!' })
 
             await userRepository.restore(user.id)
             reply.status(200).send({ message: 'ok' })
