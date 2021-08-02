@@ -74,7 +74,7 @@ class SocketClient {
                 this.connected = false
                 this.raw.destroy()
 
-                console.log("[Socket] {Disconnect} from server. Trying to reconnect!!")
+                console.log("[Socket] {Disconnected} from server. Trying to reconnect!!")
                 this.reconnect()
                 return
             }

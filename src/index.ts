@@ -29,7 +29,7 @@ if (cluster.isPrimary) {
     
     server.register(fastifyCors, { origin: "*", methods: ["GET", "POST", "PUT", "DELETE", "PATCH"] })
     server.register(fastifyStatic, { root: path.join(__dirname, "..", "uploads") })
-    server.register(fastifyMultipart, { addToBody: true })
+    server.register(fastifyMultipart, { attachFieldsToBody: true })
     server.register(routes)
 
     server.listen(port, host, async (err, address) => {
