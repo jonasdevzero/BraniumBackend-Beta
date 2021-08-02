@@ -2,6 +2,7 @@ import { FastifyPluginOptions, FastifyInstance } from "fastify"
 import userController from "../controllers/user"
 import authHook from "../hooks/auth"
 import userSchema from "./_schema/userSchema"
+import { serializeAuth } from "./_serializer/userSerializer"
 
 export default function userRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions, done: (err?: Error) => void) {
     fastify.get("/", { 
@@ -23,7 +24,8 @@ export default function userRoutes(fastify: FastifyInstance, _opts: FastifyPlugi
 
     fastify.post("/auth", { 
         schema: userSchema.auth,
-        preValidation: authHook 
+        preValidation: authHook,
+        preSerialization: serializeAuth
     }, userController.auth)
 
     fastify.put("/", {
@@ -31,11 +33,21 @@ export default function userRoutes(fastify: FastifyInstance, _opts: FastifyPlugi
         preValidation: authHook 
     }, userController.update)
 
+    fastify.patch("/email", {
+        schema: userSchema.email,
+        preValidation: authHook
+    }, userController.email)
+
+    fastify.patch("/picture", {
+        schema: userSchema.picture,
+        preValidation: authHook
+    }, userController.picture)
+
     fastify.post("/forgot_password", { 
         schema: userSchema.forgotPassword 
     }, userController.forgotPassword)
 
-    fastify.post("/reset_password", { 
+    fastify.patch("/reset_password", { 
         schema: userSchema.resetPassword 
     }, userController.resetPassword)
 

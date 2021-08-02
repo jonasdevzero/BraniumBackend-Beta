@@ -88,6 +88,35 @@ const login = {
 
 const auth = {
     response: {
+        200: {
+            type: "object",
+            properties: {
+                user: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string" },
+                        name: { type: "string" },
+                        username: { type: "string" },
+                        email: { type: "string" },
+                        picture: { type: "string" },
+                        invitations: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                properties: {}
+                            }
+                        },
+                        contacts: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                properties: {}
+                            },
+                        }
+                    }
+                }
+            }
+        },
         400: defaultResponse,
         500: defaultResponse
     }
@@ -96,6 +125,32 @@ const auth = {
 const update = {
     response: {
         400: defaultResponse,
+        500: defaultResponse
+    }
+}
+
+const email = {
+    response: {
+        200: {
+            type: "object",
+            properties: {
+                email: { type: "string" }
+            }
+        },
+        "4xx": defaultResponse,
+        500: defaultResponse
+    }
+}
+
+const picture = {
+    response: {
+        200: {
+            type: "object",
+            properties: {
+                location: { type: "string", nullable: true }
+            }
+        },
+        "4xx": defaultResponse,
         500: defaultResponse
     }
 }
@@ -139,6 +194,8 @@ export default {
     login,
     auth,
     update,
+    email,
+    picture,
     forgotPassword,
     resetPassword,
     Sdelete,
