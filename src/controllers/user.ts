@@ -1,6 +1,6 @@
 import { getRepository, ILike, Not } from "typeorm"
 import { ServerRequest, ServerReply } from "../types/controller"
-import User from "../models/User"
+import { User, ContactInvitation } from "../models"
 import { userUtil, upload } from "../utils"
 import * as yup from "yup"
 import * as mailer from "../mailer"
@@ -27,7 +27,7 @@ export default {
             const userRepository = getRepository(User)
             const [user, users] = await Promise.all([
                 userRepository.findOne(id, { relations: ["contacts"], withDeleted: true }),
-                userRepository.find({ where: { username: ILike(`%${username}%`) }, take: 20 }),
+                userRepository.find({ where: { username: ILike(`%${username}%`) }, take: 20, withDeleted: true }),
             ])
 
             if (!user)
@@ -39,7 +39,7 @@ export default {
             const existentContacts = user.contacts.map(c => c.contact_user_id)
             existentContacts.push(id)
 
-            const filteredUsers = users.filter(u => !existentContacts.includes(u.id))
+            const filteredUsers = users.filter(u => !existentContacts.includes(u.id) && !u.deleted_at)
 
             reply.status(200).send({ user: filteredUsers })
         } catch (error) {
@@ -118,16 +118,23 @@ export default {
             const id = req.user.toString()
 
             const userRepository = getRepository(User)
-            const user = await userRepository.findOne(id, {
-                relations: ["contacts", "contacts.contact", "contact_invitations", "contact_invitations.sender"],
-                withDeleted: true
-            })
+            const user  = await userRepository
+                .createQueryBuilder("user")
+                .where("user.id = :id", { id })
+                .leftJoinAndSelect("user.contacts", "contacts")
+                .leftJoinAndSelect("contacts.contact", "contact")
+                .orderBy("contacts.last_message_time", "DESC")
+                .leftJoinAndMapMany("user.contact_invitations", ContactInvitation, "c_invitation", "c_invitation.receiver_id = :receiver AND c_invitation.pending = TRUE", { receiver: id })
+                .leftJoinAndSelect("c_invitation.sender", "invitation_sender")
+                .withDeleted()
+                .getOne()
 
             if (user?.deleted_at)
                 return reply.status(400).send({ message: "Sua conta foi deletada! Restaure-a!" })
 
             reply.status(200).send({ user })
         } catch (error) {
+            req.log.error(error)
             reply.status(500).send({ message: "Internal Server Error", error })
         }
     },
