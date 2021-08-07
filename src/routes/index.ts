@@ -1,6 +1,7 @@
 import { FastifyPluginOptions, FastifyReply, FastifyInstance } from "fastify"
 import fastifyJwt from "fastify-jwt"
 import userRoutes from "./user"
+import contactRoutes from "./contact"
 
 const secret = process.env.USER_SECRET || "zero"
 const errorJwtMessages = {
@@ -21,6 +22,7 @@ export default function routes(fastify: FastifyInstance, _opts: FastifyPluginOpt
     fastify.get('/uploads/:filename', (req: any, reply) => { reply.sendFile(req.params.filename) })
 
     fastify.register(userRoutes, { prefix: "/user" })
+    fastify.register(contactRoutes, { prefix: "/contact" })
 
     done()
 }
