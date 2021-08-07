@@ -39,7 +39,8 @@ export class createContactMessage1627309257892 implements MigrationInterface {
                 {
                     name: "refence_message_id",
                     type: "uuid",
-                    unsigned: true
+                    unsigned: true,
+                    isNullable: true,
                 },
                 {
                     name: "created_at",

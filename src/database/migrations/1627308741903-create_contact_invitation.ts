@@ -40,6 +40,12 @@ export class createContactInvitation1627308741903 implements MigrationInterface 
                     columnNames: ["receiver_id"],
                     referencedTableName: "user",
                     referencedColumnNames: ["id"]
+                },
+                {
+                    name: "SenderInvitation",
+                    columnNames: ["sender_id"],
+                    referencedTableName: "user",
+                    referencedColumnNames: ["id"]
                 }
             ]
         }))
