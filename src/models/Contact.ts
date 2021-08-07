@@ -40,5 +40,8 @@ export default class Contact extends BaseEntity {
     @BeforeInsert()
     private beforeInsert() {
         this.last_message_time = new Date()
+        this.unread_messages = 0
+        this.blocked = false
+        this.you_blocked = false
     }
 }
