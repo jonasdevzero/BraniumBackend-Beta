@@ -2,7 +2,7 @@ import { FastifyPluginOptions, FastifyInstance } from "fastify"
 import userController from "../controllers/user"
 import authHook from "../hooks/auth"
 import userSchema from "./_schema/userSchema"
-import { serializeAuth } from "./_serializer/userSerializer"
+import { serializeAuth } from "./_preSerializer/userSerializer"
 
 export default function userRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions, done: (err?: Error) => void) {
     fastify.get("/", { 
