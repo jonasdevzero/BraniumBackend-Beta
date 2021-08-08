@@ -27,6 +27,10 @@ export class createContactMessage1627309257892 implements MigrationInterface {
                     unsigned: true
                 },
                 {
+                    name: "viewed",
+                    type: "boolean"
+                },
+                {
                     name: "sender_id",
                     type: "uuid",
                     unsigned: true
@@ -37,20 +41,9 @@ export class createContactMessage1627309257892 implements MigrationInterface {
                     unsigned: true
                 },
                 {
-                    name: "refence_message_id",
-                    type: "uuid",
-                    unsigned: true,
-                    isNullable: true,
-                },
-                {
                     name: "created_at",
                     type: "timestamp with time zone",
                     unsigned: true
-                },
-                {
-                    name: "deleted_at",
-                    type: "timestamp",
-                    isNullable: true
                 }
             ],
             foreignKeys: [

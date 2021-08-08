@@ -35,12 +35,10 @@ export class createContact1627308427763 implements MigrationInterface {
                 {
                     name: "blocked",
                     type: "boolean",
-                    default: false
                 },
                 {
                     name: "you_blocked",
                     type: "boolean",
-                    default: false
                 },
             ],
             foreignKeys: [
