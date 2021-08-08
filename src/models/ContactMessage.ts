@@ -1,5 +1,5 @@
-import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, DeleteDateColumn, ManyToOne, JoinColumn } from "typeorm"
-import Contact from "./Contact";
+import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from "typeorm"
+import Contact from "./Contact"
 
 @Entity("contact_message")
 export default class ContactMessage extends BaseEntity {
@@ -18,14 +18,11 @@ export default class ContactMessage extends BaseEntity {
     @Column("uuid")
     bidirectional_id: string;
 
-    @Column("uuid")
-    reference_message_id: string;
+    @Column()
+    viewed: Boolean;
 
     @Column()
     created_at: Date;
-
-    @DeleteDateColumn()
-    deleted_at: Date;
 
     @ManyToOne(_ => Contact, contact => contact.messages)
     @JoinColumn({ name: "contact_id" })

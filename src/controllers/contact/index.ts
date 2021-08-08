@@ -34,14 +34,18 @@ export default {
             const userRepository = getRepository(User)
             const invitationRepository = getRepository(ContactInvitation)
 
-            const [user, invitationAlreadySent, invitationAlreadyReceived] = await Promise.all([
+            const [user, existsUser, invitationAlreadySent, invitationAlreadyReceived] = await Promise.all([
                 userRepository.findOne({ where: { id }, relations: ['contacts'] }),
+                userRepository.findOne({ where: { id: contact_id }, select: ["id"] }),
                 invitationRepository.findOne({ where: { sender_id: id, receiver_id: contact_id, pending: true } }),
                 invitationRepository.findOne({ where: { sender_id: contact_id, receiver_id: id, pending: true } })
             ])
 
             if (!user)
                 return reply.status(500).send({ message: "Sua conta não foi encontrada!" })
+
+            if (!existsUser)
+                return reply.status(400).send({ message: "Usuário não encontrado!" })
 
             if (user.contacts.find(c => c.contact_user_id === contact_id))
                 return reply.status(400).send({ message: "Você já possui este contato" })
@@ -52,7 +56,7 @@ export default {
             if (invitationAlreadyReceived)
                 return reply.status(400).send({ message: "Este usuário lhe enviou um convite!" })
 
-            const invite = await invitationRepository.create({ sender: user, receiver_id: contact_id }).save()
+            await invitationRepository.create({ sender: user, receiver_id: contact_id }).save()
 
             reply.status(201).send({ message: "ok" });
         } catch (error) {
