@@ -11,8 +11,6 @@ import path from "path"
 import routes from "./routes"
 import { socketServer } from "./socket"
 
-const port = process.env.PORT || 5000
-const host = process.env.HOST || "127.0.0.1"
 const secret = process.env.USER_SECRET || "zero"
 const errorJwtMessages = {
     badRequestErrorMessage: "Sessão inválida!",
@@ -38,7 +36,7 @@ if (cluster.isPrimary) {
     server.register(fastifyMultipart, { attachFieldsToBody: true })
     server.register(routes)
 
-    server.listen(port, host, async (err, address) => {
+    server.listen(process.env.PORT || 5000, process.env.HOST || "127.0.0.1", async (err, address) => {
         if (err) {
             server.log.error(err)
             process.exit(1)
