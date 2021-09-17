@@ -7,22 +7,22 @@ interface SocketUser {
 }
 
 export default class SocketUsers {
-    #users: Map<string, SocketUser>
+    users: Map<string, SocketUser>
 
     constructor() {
-        this.#users = new Map()
+        this.users = new Map()
     }
 
     get(id: string) {
-        return this.#users.get(id)
+        return this.users.get(id)
     }
 
     set(id: string, user: SocketUser) {
-        this.#users.set(id, user)
+        this.users.set(id, user)
     }
 
     remove(id: string) {
-        this.#users.delete(id)
+        this.users.delete(id)
     }
 
     pushContact(id: string, contact: Contact) {

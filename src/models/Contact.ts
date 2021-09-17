@@ -1,5 +1,5 @@
 import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, BeforeInsert } from "typeorm"
-import ContactMessage from "./ContactMessage";
+import ContactMessage from "./ContactMessage"
 import User from "./User"
 
 @Entity("contact")
