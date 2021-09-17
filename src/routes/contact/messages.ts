@@ -13,7 +13,7 @@ export default function contactMessagesRoutes(fastify: FastifyInstance, _opts: F
 
     fastify.patch("/view/:contact", {
         schema: {}
-    }, cMessagesController.index)
+    }, cMessagesController.view)
 
     fastify.delete("/:message", {
         schema: {}

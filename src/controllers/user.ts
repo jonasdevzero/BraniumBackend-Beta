@@ -1,9 +1,12 @@
 import { getRepository, ILike, Not } from "typeorm"
 import { ServerRequest, ServerReply } from "../types/controller"
-import { User, ContactInvitation } from "../models"
+import { User, ContactInvitation, PreRegistration } from "../models"
 import { userUtil, upload } from "../utils"
 import * as yup from "yup"
 import * as mailer from "../mailer"
+import { constant } from "../constant"
+
+// CTRL d > Implemet Socket Event Bellow
 
 export default {
     async index(_req: ServerRequest, reply: ServerReply) {
@@ -26,7 +29,7 @@ export default {
 
             const userRepository = getRepository(User)
             const [user, users] = await Promise.all([
-                userRepository.findOne(id, { relations: ["contacts"], withDeleted: true }),
+                userRepository.findOne(id, { relations: ["contacts", "invitations_sent"], withDeleted: true }),
                 userRepository.find({ where: { username: ILike(`%${username}%`) }, take: 20, withDeleted: true }),
             ])
 
@@ -36,8 +39,9 @@ export default {
             if (user.deleted_at)
                 return reply.status(400).send({ message: "Sua conta foi deletada! Restaure-a!" })
 
-            const existentContacts = user.contacts.map(c => c.contact_user_id)
-            existentContacts.push(id)
+                const existentContacts = [user.id]
+                user.contacts.forEach(c => existentContacts.push(c.contact_user_id))
+                user.invitations_sent.forEach(i => i.pending ? existentContacts.push(i.receiver_id) : null)
 
             const filteredUsers = users.filter(u => !existentContacts.includes(u.id) && !u.deleted_at)
 
@@ -47,39 +51,104 @@ export default {
         }
     },
 
-    async create(req: ServerRequest, reply: ServerReply) {
+    async preRegistration(req: ServerRequest, reply: ServerReply) {
         try {
-            const { name, username, email, password, confirm_password } = req.body
-
-            if (password !== confirm_password)
-                return reply.status(500).send({ message: "Senhas diferentes" })
+            const { name, email } = req.body
 
             const schema = yup.object().shape({
-                confirm_password: yup.string().min(6).required("Preencha o campo 'confirmar senha'"),
-                password: yup.string().min(6, "A senha deve ter no mínimo 6 caracteres").required("Preencha o campo 'senha'"),
                 email: yup.string().lowercase().email("Formatação de email incorreta").required("Preencha o campo 'email'"),
-                username: yup.string().lowercase().min(4, "O username deve ter no mínimo 4 caracteres").required("Preencha o campo 'username'"),
                 name: yup.string().required("Preencha o campo 'nome'"),
             })
 
-            let validationError: any = undefined
+            let validationError: any
             const userRepository = getRepository(User)
-            const [existsUsername, existsEmail] = await Promise.all([
-                userRepository.findOne({ where: { username }, withDeleted: true }),
+            const preRegistrationRepo = getRepository(PreRegistration)
+
+            const [existsEmail, existsPreRegistration] = await Promise.all([
                 userRepository.findOne({ where: { email }, withDeleted: true }),
+                preRegistrationRepo.findOne({ where: { email } }),
                 schema.validate(req.body).catch(err => validationError = err)
             ])
 
             if (validationError)
                 return reply.status(400).send({ message: validationError.errors[0] })
 
-            if (existsUsername)
-                return reply.status(400).send({ message: "Username em uso" })
-
             if (existsEmail)
                 return reply.status(400).send({ message: "Email já registrado" })
 
-            const user = await userRepository.create({ name, username, email, password }).save()
+            if (existsPreRegistration)
+                return reply.status(400).send({ message: "Email já cadastrado" })
+
+            const preRegistration = await preRegistrationRepo.create({ name, email }).save()
+
+            const link = constant.client.routes.completeRegistration(preRegistration.id)
+            const template = await mailer.loadTemplate("completeRegistration", { link, name })
+            mailer.sendMail(email, "Completar cadastro!", template)
+
+            reply.status(201).send({ message: "Verifique seu e-mail!" })
+        } catch (error) {
+            reply.status(500).send({ message: "Internal Server Error", error })
+        }
+    },
+
+    async showPreRegistration(req: ServerRequest, reply: ServerReply) {
+        try {
+            const id = req.params.id
+
+            const preRegistrationRepo = getRepository(PreRegistration)
+            const preRegistration = await preRegistrationRepo.findOne(id)
+
+            if (!preRegistration)
+                return reply.status(404).send({ message: "Cadastro não encontrado!" })
+
+            reply.status(200).send({ preRegistration })
+        } catch (error) {
+            reply.status(500).send({ message: "Internal Server Error", error })
+        }
+    },
+
+    async registration(req: ServerRequest, reply: ServerReply) {
+        try {
+            const { username, password, confirm_password } = req.body
+            const id = req.params.id
+
+            if (password !== confirm_password)
+                return reply.status(400).send({ message: "Senhas diferentes!" })
+
+            let validationError: any
+            const schema = yup.object().shape({
+                confirm_password: yup.string().min(6).required("Preencha o campo 'confirmar senha'"),
+                password: yup.string().min(6, "A senha deve ter no mínimo 6 caracteres").required("Preencha o campo 'senha'"),
+                username: yup.string().lowercase().min(4, "O username deve ter no mínimo 4 caracteres").required("Preencha o campo 'username'"),
+            })
+
+            const preRegistrationRepo = getRepository(PreRegistration)
+            const userRepository = getRepository(User)
+
+            const [preRegistration, existsUsername] = await Promise.all([
+                preRegistrationRepo.findOne(id),
+                userRepository.findOne({ where: { username } }),
+                schema.validate(req.body).catch(err => validationError = err)
+            ])
+
+            if (validationError)
+                return reply.status(400).send({ message: validationError.errors[0] })
+
+            if (!preRegistration)
+                return reply.status(404).send({ message: "Cadastro não encontrado!" })
+
+            if (!preRegistration.pending)
+                return reply.status(400).send({ message: "Cadastro já realizado!" })
+
+            if (existsUsername)
+                return reply.status(400).send({ message: "Username em uso!" })
+
+            const { name, email } = preRegistration
+
+            const [user] = await Promise.all([
+                userRepository.create({ name, email, username, password }).save(),
+                preRegistrationRepo.update(preRegistration, { pending: false })
+            ])
             const token = await reply.jwtSign({ id: user.id }, { expiresIn: 86400000 })
 
             reply.status(201).send({ token })
@@ -90,12 +159,12 @@ export default {
 
     async login(req: ServerRequest, reply: ServerReply) {
         try {
-            const { ref, password }: { ref: string, password: string } = req.body
+            const { username, password } = req.body
 
             const userRepository = getRepository(User)
 
-            const target = /^[a-z0-9.]+@[a-z0-9]+\.[a-z]+(\.[a-z]+)?$/i.test(ref) ? "email" : "username"
-            const user = await userRepository.findOne({ where: { [target]: ref }, withDeleted: true })
+            const target = /^[a-z0-9.]+@[a-z0-9]+\.[a-z]+(\.[a-z]+)?$/i.test(username) ? "email" : "username"
+            const user = await userRepository.findOne({ where: { [target]: username }, withDeleted: true })
 
             if (!user)
                 return reply.status(400).send({ message: `'${target}' incorreto` })
@@ -118,7 +187,7 @@ export default {
             const id = req.user.toString()
 
             const userRepository = getRepository(User)
-            const user  = await userRepository
+            const user = await userRepository
                 .createQueryBuilder("user")
                 .where("user.id = :id", { id })
                 .leftJoinAndSelect("user.contacts", "contacts")
@@ -168,7 +237,9 @@ export default {
                 return reply.status(400).send({ message: "Username em uso!" })
 
             await userRepository.update(id, { name, username })
-            return reply.status(200).send({ name, username })
+            reply.status(200).send({ name, username })
+
+            // Implemet Socket Event Bellow
         } catch (error) {
             reply.status(500).send({ message: "Internal Server Error", error })
         }
@@ -178,7 +249,7 @@ export default {
         try {
             const id = req.user.toString()
             const { email, password } = req.body
-            
+
             const schema = yup.object({
                 email: yup.string().email("Email mal formatado").required("Preencha o campo 'email'"),
                 password: yup.string().required("Preencha o campo  'senha'")
@@ -240,6 +311,8 @@ export default {
             }
 
             reply.status(200).send({ location })
+
+            // Implemet Socket Event Bellow
         } catch (error) {
             reply.status(500).send({ message: "Internal Server Error", error })
         }
@@ -253,7 +326,7 @@ export default {
             const user = await userRepository.findOne({ where: { email }, withDeleted: true })
 
             if (!user)
-                return reply.status(400).send({ message: 'Conta não encontrada!' })
+                return reply.status(400).send({ message: "Conta não encontrada!" })
 
             if (user.deleted_at)
                 return reply.status(400).send({ message: "Sua conta foi deletada! Restaure-a!" })
@@ -265,11 +338,11 @@ export default {
             const { id } = user
             await userRepository.update(id, { reset_token, expire_token })
 
-            const link = `${process.env.CLIENT_URL}/resetPassword/${reset_token}`
+            const link = constant.client.routes.forgotPassword(reset_token)
             const template = await mailer.loadTemplate("forgotPassword", { link })
-            mailer.sendMail(email, "Password Reset", template)
+            mailer.sendMail(email, "Resetar sua senha", template)
 
-            reply.status(200).send({ message: 'Verifique seu email' })
+            reply.status(200).send({ message: "Verifique seu email" })
         } catch (error) {
             reply.status(500).send({ message: "Internal Server Error", error })
         }
@@ -297,14 +370,14 @@ export default {
             const user = await userRepository.findOne({ where: { reset_token } })
 
             if (!user)
-                return reply.status(400).send({ message: 'Token inválido' })
+                return reply.status(400).send({ message: "Token inválido, peça outro e-mail!" })
 
             const now = new Date()
             if (now > user.expire_token)
-                return reply.status(400).send({ message: 'Token expirado' })
+                return reply.status(400).send({ message: "Token expirado, peça outro e-mail!" })
 
             await userRepository.update(user, { password: userUtil.encryptPassword(password), reset_token: undefined, expire_token: undefined })
-            reply.status(200).send({ message: 'Senha alterada com sucesso!' })
+            reply.status(200).send({ message: "Senha alterada com sucesso!" })
         } catch (error) {
             reply.status(500).send({ message: "Internal Server Error", error })
         }

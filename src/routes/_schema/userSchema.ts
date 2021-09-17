@@ -31,7 +31,7 @@ const search = {
                     items: {
                         type: "object",
                         properties: {
-                            name: { type: "string" },
+                            id: { type: "string" },
                             username: { type: "string" },
                             picture: { type: "string", nullable: true },
                         }
@@ -44,15 +44,45 @@ const search = {
     }
 }
 
-const create = {
+const showPreRegistration = {
+    response: {
+        200: {
+            type: "object",
+            properties: {
+                preRegistration: { 
+                    type: "object", 
+                    properties: {
+                        name: { type: "string" },
+                        pending: { type: "boolean" }
+                    } 
+                }
+            }
+        }
+    }
+}
+
+const preRegistration = {
     body: {
         type: "object",
         properties: {
             name: { type: "string" },
-            username: { type: "string" },
             email: { type: "string" },
+        }
+    },
+    response: {
+        201: defaultMessage,
+        400: defaultMessage,
+        500: defaultError,
+    }
+}
+
+const registration = {
+    body: {
+        type: "object",
+        properties: {
+            username: { type: "string" },
             password: { type: "string" },
-            confirmPassword: { type: "string" },
+            confirm_password: { type: "string" }
         }
     },
     response: {
@@ -93,7 +123,7 @@ const auth = {
                         username: { type: "string" },
                         email: { type: "string" },
                         picture: { type: "string", nullable: true },
-                        invitations: {
+                        contact_invitations: {
                             type: "array",
                             items: {
                                 type: "object",
@@ -206,7 +236,9 @@ const restore = {
 export default {
     index,
     search,
-    create,
+    showPreRegistration,
+    preRegistration,
+    registration,
     login,
     auth,
     update,

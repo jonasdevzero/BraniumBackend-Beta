@@ -1,6 +1,7 @@
 import { getRepository } from "typeorm"
 import { ServerRequest, ServerReply } from "../../types/controller"
 import { Contact, User, ContactInvitation } from "../../models"
+import socketEmit from ".././../socket/emit"
 
 export default {
     async show(req: ServerRequest, reply: ServerReply) {
@@ -54,11 +55,12 @@ export default {
                 return reply.status(400).send({ message: "Você já enviou um convite para este usuário" })
 
             if (invitationAlreadyReceived)
-                return reply.status(400).send({ message: "Este usuário lhe enviou um convite!" })
+                return reply.status(400).send({ message: "Este usuário já lhe enviou um convite!" })
 
-            await invitationRepository.create({ sender: user, receiver_id: contact_id }).save()
+            const invite = await invitationRepository.create({ sender: user, receiver_id: contact_id }).save()
 
-            reply.status(201).send({ message: "ok" });
+            socketEmit.contact.invite(invite)
+            reply.status(201).send({ message: "ok" })
         } catch (error) {
             reply.status(500).send({ message: "Internal Server Error", error })
         }
@@ -72,12 +74,12 @@ export default {
             const contactRepository = getRepository(Contact)
             const invitationsRepository = getRepository(ContactInvitation)
 
-            const invitation = await invitationsRepository.findOne(invitation_id)
+            const invitation = await invitationsRepository.findOne(invitation_id, { relations: ["user", "sender"] })
 
             if (!invitation)
                 return reply.status(404).send({ message: "Convite não encontrado!" })
 
-            const { sender_id, receiver_id, pending } = invitation
+            const { sender_id, receiver_id, pending, sender, user: receiver } = invitation
 
             if (receiver_id !== id)
                 return reply.status(400).send({ message: "Este convite é para outro usuário!" })
@@ -85,13 +87,13 @@ export default {
             if (!pending)
                 return reply.status(400).send({ message: "Convite inválido" })
 
-            await Promise.all([
-                contactRepository.create({ user_id: id, contact_user_id: sender_id }).save(),
-                contactRepository.create({ user_id: sender_id, contact_user_id: id }).save(),
+            const [contact, contactAccept] = await Promise.all([
+                contactRepository.create({ user_id: id, contact_user_id: sender_id, contact: sender }).save(),
+                contactRepository.create({ user_id: sender_id, contact_user_id: id, contact: receiver }).save(),
                 invitationsRepository.update(invitation, { pending: false })
             ])
-            const contact = await contactRepository.findOne({ where: { user_id: id, contact_user_id: sender_id }, relations: ["contact"] })
 
+            socketEmit.contact.acceptInvite(contact, contactAccept)
             reply.status(201).send({ contact })
         } catch (error) {
             reply.status(500).send({ message: "Internal Server Error", error })
@@ -104,7 +106,7 @@ export default {
             const invitation_id = req.params.invite
 
             const invitationsRepository = getRepository(ContactInvitation)
-            const invitation = await invitationsRepository.findOne({ where: { id: invitation_id, receiver_id: id } })
+            const invitation = await invitationsRepository.findOne({ where: { id: invitation_id, receiver_id: id }, relations: ["user"] })
 
             if (!invitation)
                 return reply.status(404).send({ message: "Convite não encontrado!" })
@@ -119,7 +121,8 @@ export default {
 
             await invitationsRepository.update(invitation, { pending: false })
 
-            return reply.status(200).send({ message: "ok" })
+            socketEmit.contact.refuseInvite(invitation)
+            reply.status(200).send({ message: "ok" })
         } catch (error) {
             reply.status(500).send({ message: "Internal Server Error", error })
         }

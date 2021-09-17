@@ -14,9 +14,17 @@ export default function userRoutes(fastify: FastifyInstance, _opts: FastifyPlugi
         preValidation: authHook 
     }, userController.search)
 
-    fastify.post("/", { 
-        schema: userSchema.create 
-    }, userController.create)
+    fastify.get("/pre_registration/:id", {
+        schema: userSchema.showPreRegistration
+    }, userController.showPreRegistration)
+
+    fastify.post("/pre_registration", {
+        schema: userSchema.preRegistration
+    }, userController.preRegistration)    
+
+    fastify.post("/registration/:id", { 
+        schema: userSchema.registration 
+    }, userController.registration)
 
     fastify.post("/login", { 
         schema: userSchema.login 

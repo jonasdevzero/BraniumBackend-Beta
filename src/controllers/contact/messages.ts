@@ -3,6 +3,9 @@ import { ServerRequest, ServerReply } from "../../types/controller"
 import { Contact, ContactMessage } from "../../models"
 import { upload } from "../../utils"
 import { v4 as uuidV4 } from "uuid"
+import socketEmit from "../../socket/emit"
+
+// CTRL d > Implemet Socket Event Bellow
 
 export default {
     async index(req: ServerRequest, reply: ServerReply) {
@@ -64,18 +67,19 @@ export default {
             if (sender.you_blocked)
                 return reply.status(400).send({ message: "Você bloqueou este contato!" })
 
-            const cMessagesRepository = getRepository(ContactMessage),
+            const cMessageRepository = getRepository(ContactMessage),
                 bidirectional_id = uuidV4(), 
                 created_at = new Date(),
                 unread_messages = receiver.unread_messages + 1
 
-            const [message] = await Promise.all([
-                cMessagesRepository.create({ text, sender_id, bidirectional_id, created_at, contact_id: sender.id, viewed: false }).save(),
-                cMessagesRepository.create({ text, sender_id, bidirectional_id, created_at, contact_id: receiver.id, viewed: true }).save(),
+            const [message, receiverMessage] = await Promise.all([
+                cMessageRepository.create({ text, sender_id, bidirectional_id, created_at, contact_id: sender.id, viewed: false }).save(),
+                cMessageRepository.create({ text, sender_id, bidirectional_id, created_at, contact_id: receiver.id, viewed: true }).save(),
                 contactRepository.update(sender.id, { last_message_time: created_at }),
                 contactRepository.update(receiver.id, { unread_messages, last_message_time: created_at }),
             ])
 
+            socketEmit.contact.message(message, receiverMessage, to)
             reply.status(201).send({ message, to })
         } catch (error) {
             reply.status(500).send({ message: "Internal Server Error", error })
@@ -89,22 +93,24 @@ export default {
 
             const contactRepository = getRepository(Contact)
             const [myContact, contact] = await Promise.all([
-                contactRepository.findOne({ where: { user_id: id, user_contact_id: contact_id } }),
-                contactRepository.findOne({ where: { user_id: contact_id, user_contact_id: id } }),
+                contactRepository.findOne({ where: { user_id: id, contact_user_id: contact_id } }),
+                contactRepository.findOne({ where: { user_id: contact_id, contact_user_id: id } }),
             ])
 
             if (!contact || !myContact)
                 return reply.status(404).send({ message: "Contato não encontrado!" })
             
-            const cMessagesRepository = getRepository(ContactMessage)
-            const unviewedMessages = await cMessagesRepository.find({ where: { contact, viewed: false, sender_id: id } })
+            const cMessageRepository = getRepository(ContactMessage)
+            const unviewedMessages = await cMessageRepository.find({ where: { contact, viewed: false, sender_id: id } })
 
             await Promise.all([
                 contactRepository.update(myContact, { unread_messages: 0 }),
-                unviewedMessages.map(m => cMessagesRepository.update(m, { viewed: true }))
+                unviewedMessages.map(m => cMessageRepository.update(m, { viewed: true }))
             ])
 
             reply.status(200).send({ message: "ok" })
+
+            // Implemet Socket Event Bellow
         } catch (error) {
             reply.status(500).send({ message: "Internal Server Error", error })
         }
@@ -114,10 +120,10 @@ export default {
         try {
             const id = req.user
             const message_id = req.params.message
-            const { target } = req.query
+            let { target } = req.query
 
-            const cMessagesRepository = getRepository(ContactMessage)
-            const message = await cMessagesRepository.findOne(message_id, { relations: ["contact"] })
+            const cMessageRepository = getRepository(ContactMessage)
+            const message = await cMessageRepository.findOne(message_id, { relations: ["contact"] })
 
             if (!message)
                 return reply.status(404).send({ message: "Mensagem não encontrada!" })
@@ -125,21 +131,22 @@ export default {
             if (message.contact.user_id !== id)
                 return reply.status(401).send({ message: "Você não enviou esta mensagem!" })
 
+            target = !target ? "me" : target 
             switch (target) {
                 case "me":
-                    await cMessagesRepository.delete({ id: message_id })
+                    await cMessageRepository.delete({ id: message_id })
                     break
                 case "bidirectional":
                     if (message.sender_id !== id)
                         return reply.status(401).send({ message: "Você não enviou esta mensagem!" })
 
-                    await cMessagesRepository.delete({ bidirectional_id: message.bidirectional_id })
+                    await cMessageRepository.delete({ bidirectional_id: message.bidirectional_id })
                     break
-                default:
-                    return reply.status(400).send({ message: "target inválido!" })
             }
 
-            return reply.status(200).send({ message: "ok" })
+            reply.status(200).send({ message: "ok" })
+
+            // Implemet Socket Event Bellow
         } catch (error) {
             reply.status(500).send({ message: "Internal Server Error", error })
         }
@@ -156,8 +163,8 @@ export default {
             if (!contact)
                 return reply.status(404).send({ message: "Contato não encontrado!" })
 
-            const cMessagesRepository = getRepository(ContactMessage)
-            await cMessagesRepository.delete({ contact })
+            const cMessageRepository = getRepository(ContactMessage)
+            await cMessageRepository.delete({ contact })
 
             reply.status(200).send({ message: "ok" })
         } catch (error) {

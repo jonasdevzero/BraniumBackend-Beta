@@ -4,7 +4,7 @@ import { renderContact } from "./contactSerializer"
 
 export function serializeAuth(_req: FastifyRequest, _reply: FastifyReply, payload: any, done: DoneFuncWithErrOrRes) {
     const { user } = payload
-    done(null, { user: renderUser(user) })
+    user ? done(null, { user: renderUser(user) }) : done(null, payload)
 }
 
 function renderUser(user: User) {
@@ -15,7 +15,7 @@ function renderUser(user: User) {
             username,
             email,
             picture,
-            invitations: contact_invitations,
+            contact_invitations: contact_invitations,
             contacts: renderContact(contacts),
         }
 }
