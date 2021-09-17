@@ -44,7 +44,7 @@ if (cluster.isPrimary) {
     server.register(fastifyMultipart, { attachFieldsToBody: true })
     server.register(routes)
 
-    server.listen(port, host, async (err, address) => {
+    server.listen(port, async (err, address) => {
         if (err) {
             server.log.error(err)
             process.exit(1)
