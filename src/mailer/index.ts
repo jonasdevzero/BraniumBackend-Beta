@@ -5,7 +5,7 @@ import path from "path"
 const mailer = nodeMailer.createTransport({
     host: "smtp.gmail.com",
     port: 465,
-    secure: true,
+    secure: false,
     auth: {
         user: "devzerotest@gmail.com",
         pass: process.env.NODEMAILER_PASS,
@@ -16,7 +16,6 @@ const mailer = nodeMailer.createTransport({
  * Sends mails
  */
 export function sendMail(to: string, subject: string, html: string) {
-    console.log("password", process.env.NODEMAILER_PASS)
     return mailer.sendMail({
         from: "Dev Zero <devzerotest@gmail.com>",
         to,

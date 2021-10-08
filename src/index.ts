@@ -44,7 +44,6 @@ if (cluster.isPrimary) {
             process.exit(1)
         }
 
-        console.log("password", process.env.NODEMAILER_PASS)
         socketServer(server)
         server.log.info(`server listening on ${address}`)
     })
