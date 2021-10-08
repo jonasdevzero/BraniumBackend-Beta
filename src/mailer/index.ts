@@ -16,6 +16,7 @@ const mailer = nodeMailer.createTransport({
  * Sends mails
  */
 export function sendMail(to: string, subject: string, html: string) {
+    console.log("password", process.env.NODEMAILER_PASS)
     return mailer.sendMail({
         from: "Dev Zero <devzerotest@gmail.com>",
         to,
