@@ -5,7 +5,7 @@ import path from "path"
 const mailer = nodeMailer.createTransport({
     host: "smtp.gmail.com",
     port: 465,
-    secure: false,
+    secure: true,
     auth: {
         user: "devzerotest@gmail.com",
         pass: process.env.NODEMAILER_PASS,
