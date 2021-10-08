@@ -43,6 +43,16 @@ const emit = {
             socket.emit("warn", { type: "error", message: `${i.user.username} recusou o seu convite de amizade!` })
         },
 
+        block(myContact: Contact, contact: Contact) {
+            const socket = wsUsers.get(myContact.user_id)?.socket
+            const contactSocket = wsUsers.get(contact.user_id)?.socket
+            const blocked = !contact.blocked
+
+            socket?.emit("update", { type: "UPDATE_ROOM", whereId: myContact.contact_user_id, set: { you_blocked: blocked }, roomType: "contacts" })
+            contactSocket?.emit("update", { type: "UPDATE_ROOM", whereId: contact.contact_user_id, set: { blocked }, roomType: "contacts" })
+            contactSocket?.emit("warn", { type: !blocked ? "info" : "error", message: `${myContact.user.username} lhe ${!blocked ? "des" : ""}bloqueou` })
+        },
+
         message(senderMessage: ContactMessage, receiverMessage: ContactMessage, to: string) {
             const socketSender = wsUsers.get(senderMessage.sender_id)?.socket
             const socketReceiver = wsUsers.get(to)?.socket

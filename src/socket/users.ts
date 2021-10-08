@@ -12,7 +12,7 @@ export default class SocketUsers {
     constructor() {
         this.users = new Map()
     }
-
+    
     get(id: string) {
         return this.users.get(id)
     }

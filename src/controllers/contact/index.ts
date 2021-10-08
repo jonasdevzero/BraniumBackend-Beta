@@ -137,7 +137,7 @@ export default {
 
             // "myContact" is my contact that I have with the other user. "contact" is the contact that the other user has with me.
             const [myContact, contact] = await Promise.all([
-                contactRepository.findOne({ user_id: id, contact_user_id: contact_id }),
+                contactRepository.findOne({ where: { user_id: id, contact_user_id: contact_id }, relations: ["user"] },),
                 contactRepository.findOne({ user_id: contact_id, contact_user_id: id })
             ])
 
@@ -149,6 +149,7 @@ export default {
                 contactRepository.update(contact, { blocked: !contact.blocked })
             ])
 
+            socketEmit.contact.block(myContact, contact)
             reply.status(200).send({ you_blocked: !myContact.you_blocked })
         } catch (error) {
             reply.status(500).send({ message: "Internal Server Error", error })

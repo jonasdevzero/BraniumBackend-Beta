@@ -32,6 +32,7 @@ export function socketServer(fastify: FastifyInstance) {
                 socket.emit("auth", "Usuário não encontrado")
                 return socket.disconnect()
             }
+
             socket.join(id)
             wsUsers.set(id, { socket, user })
             const contactsOnline = wsUsers.getContactsOnline(id)
@@ -42,7 +43,7 @@ export function socketServer(fastify: FastifyInstance) {
             socket.emit("auth", null, { type: "SET_CONTACTS_ONLINE", contacts: contactsOnline })
             socket.emit("warn", { type: "info", message: `Bem-vindo, ${user.username}` })
 
-            /* Events listeners */
+            /* Event listeners */
 
             socket.on("isOnline", (contact_id, callback) => callback(!!wsUsers.get(contact_id)))
 
