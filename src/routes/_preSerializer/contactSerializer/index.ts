@@ -20,7 +20,7 @@ function renderOne(c: Contact) {
         unread_messages,
         last_message_time,
         blocked,
-        you_blocked
+        you_blocked,
     }
 }
 

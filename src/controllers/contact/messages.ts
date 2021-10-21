@@ -12,10 +12,10 @@ export default {
         try {
             const id = req.user
             const contact_id = req.params.contact
-            let { limit, skip } = req.query
+            let { limit, skip, skip_u } = req.query
 
-            limit = limit > 0 ? limit : 50
-            skip = (skip > 0 ? skip : 0) * limit
+            limit = limit > 0 ? limit : 30
+            skip = ((skip > 0 ? skip : 0) * limit) + (skip_u || 0)
 
             const contactRepository = getRepository(Contact)
             const cMessageRepository = getRepository(ContactMessage)

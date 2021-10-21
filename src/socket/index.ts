@@ -3,6 +3,7 @@ import { FastifyInstance } from "fastify"
 import { getRepository } from "typeorm"
 import { User } from "../models"
 import SocketUsers from "./users"
+import * as Actions from "./actions"
 
 let io = new Server()
 
@@ -37,21 +38,17 @@ export function socketServer(fastify: FastifyInstance) {
             wsUsers.set(id, { socket, user })
             const contactsOnline = wsUsers.getContactsOnline(id)
 
-            for (const c of contactsOnline)
-                socket.to(c).emit("update", { type: "UPDATE_ROOM", whereId: id, set: { online: true }, roomType: "contacts" });
+            wsUsers.emitToContacts(id, "update", Actions.update("UPDATE_ROOM", { field: "contacts", where: { id }, set: { online: true } }))
 
-            socket.emit("auth", null, { type: "SET_CONTACTS_ONLINE", contacts: contactsOnline })
-            socket.emit("warn", { type: "info", message: `Bem-vindo, ${user.username}` })
+            socket.emit("auth", null, Actions.update("SET_CONTACTS_ONLINE", { set: { contacts: contactsOnline } }))
+            socket.emit("warn", Actions.warn("info", `Bem-vindo, ${user.username}`))
 
             /* Event listeners */
 
-            socket.on("isOnline", (contact_id, callback) => callback(!!wsUsers.get(contact_id)))
+            socket.on("is-online", (contact_id, callback) => callback(!!wsUsers.get(contact_id)))
 
             socket.on("disconnect", () => {
-                const contactsOnline = wsUsers.getContactsOnline(id)
-                for (const c of contactsOnline)
-                    socket.to(c).emit("update", { type: "UPDATE_ROOM", whereId: id, set: { online: false }, roomType: "contacts" });
-
+                wsUsers.emitToContacts(id, "update", Actions.update("UPDATE_ROOM", { field: "contacts", where: { id }, set: { online: false } }))
                 wsUsers.remove(id)
             })
         } catch (error) {

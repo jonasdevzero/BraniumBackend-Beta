@@ -4,7 +4,8 @@ const index = {
         type: "object",
         properties: {
             limit: { type: "number", nullable: true },
-            skip: { type: "number", nullable: true }
+            skip: { type: "number", nullable: true },
+            skip_u: { type: "number", nullable: true }
         }
     },
     response: {

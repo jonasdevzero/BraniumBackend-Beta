@@ -24,7 +24,7 @@ export default class SocketUsers {
     remove(id: string) {
         this.users.delete(id)
     }
-
+    
     pushContact(id: string, contact: Contact) {
         const wsUser = this.get(id)
         if (!wsUser) return;
@@ -36,12 +36,21 @@ export default class SocketUsers {
     getContactsOnline(id: string) {
         const user = this.get(id)?.user
         if (!user) return [];
-
+        
         const contactsOnline: string[] = []
         for (const { contact_user_id } of user.contacts) {
             !!this.get(contact_user_id) ? contactsOnline.push(contact_user_id) : null;
         }
-
+        
         return contactsOnline
+    }
+
+    emitToContacts(id: string, event: string, ...args: any[]) {
+        const socket = this.get(id)?.socket
+        if (!socket) return;
+
+        const contacts = this.getContactsOnline(id)
+        for (const c of contacts) 
+            socket.to(c).emit(event, ...args);
     }
 }
