@@ -1,23 +1,17 @@
-import nodeMailer from "nodemailer"
+import sgMail from "@sendgrid/mail"
 import ejs from "ejs"
 import path from "path"
 
-const mailer = nodeMailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: {
-        user: "devzerotest@gmail.com",
-        pass: process.env.NODEMAILER_PASS,
-    },
-})
+const API_KEY = process.env.SENDGRID_KEY || ""
+
+sgMail.setApiKey(API_KEY)
 
 /**
  * Sends mails
  */
 export function sendMail(to: string, subject: string, html: string) {
-    return mailer.sendMail({
-        from: "Dev Zero <devzerotest@gmail.com>",
+    return sgMail.send({
+        from: "devzerotest@gmail.com",
         to,
         subject,
         html,
