@@ -29,8 +29,18 @@ const emit = {
             wsUsers.pushContact(receiver.user_id, receiver)
             wsUsers.pushContact(sender.user_id, sender)
 
+            const data = { 
+                ...renderContact(sender), 
+                online: true,
+                extra: {
+                    last_scroll_position: undefined,
+                    pushed_messages: 0,
+                    fetch_messages_count: 0,
+                    full_loaded: false,
+                }
+            }
             // Emitting to invite sender the new contact
-            socket.emit("update", Actions.update("USER_PUSH_DATA", { field: "contacts", set: { data: renderContact(sender), online: true } }))
+            socket.emit("update", Actions.update("USER_PUSH_DATA", { field: "contacts", set: { data } }))
             socket.emit("warn", Actions.warn("success", `${sender.contact.username} aceitou o seu convite de amizade!`))
         },
 
