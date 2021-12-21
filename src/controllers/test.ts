@@ -7,7 +7,7 @@ export default {
             const { email } = req.query
 
             const template = await mailer.loadTemplate("test", {})
-            await mailer.sendMail(email, "Completar cadastro!", template)
+            mailer.sendMail(email, "Completar cadastro!", template)
 
             reply.status(201).send({ message: "Verifique seu e-mail!" })
         } catch (error) {
