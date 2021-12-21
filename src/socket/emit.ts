@@ -17,7 +17,7 @@ const emit = {
             const socket = wsUsers.get(i.receiver_id)?.socket
             if (!socket) return;
 
-            socket.emit("update", Actions.update("USER_PUSH_DATA", { field: "contact_invitations", set: i }))
+            socket.emit("update", Actions.update("USER_PUSH_DATA", { field: "contact_invitations", set: { data: i } }))
             socket.emit("warn", Actions.warn("info", `${i.sender.username} enviou um convite de amizade!`))
         },
 
@@ -30,7 +30,7 @@ const emit = {
             wsUsers.pushContact(sender.user_id, sender)
 
             // Emitting to invite sender the new contact
-            socket.emit("update", Actions.update("USER_PUSH_DATA", { field: "contacts", set: { ...renderContact(sender), online: true } }))
+            socket.emit("update", Actions.update("USER_PUSH_DATA", { field: "contacts", set: { data: renderContact(sender), online: true } }))
             socket.emit("warn", Actions.warn("success", `${sender.contact.username} aceitou o seu convite de amizade!`))
         },
 
