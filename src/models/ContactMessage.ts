@@ -1,4 +1,5 @@
-import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from "typeorm"
+import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from "typeorm"
+import { ContactMediaMessage } from ".";
 import Contact from "./Contact"
 
 @Entity("contact_message")
@@ -27,4 +28,8 @@ export default class ContactMessage extends BaseEntity {
     @ManyToOne(_ => Contact, contact => contact.messages)
     @JoinColumn({ name: "contact_id" })
     contact: Contact;
+
+    @OneToMany(_ => ContactMediaMessage, cMediaMessage => cMediaMessage.message)
+    @JoinColumn({ name: "message_id" })
+    medias: ContactMediaMessage[]
 }
