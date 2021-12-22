@@ -1,9 +1,9 @@
 import { FastifyPluginOptions, FastifyInstance } from "fastify"
-import authHook from "../../hooks/auth"
-import contactController from "../../controllers/contact"
+import authHook from "../../hooks/authHook"
+import contactController from "../../controllers/contactController"
 import contactSchema from "../_schema/contactSchema"
 import contactSerializer from "../_preSerializer/contactSerializer"
-import messagesRoutes from "./messages"
+import messagesRoutes from "./messagesRoutes"
 
 export default function contactRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions, done: (err?: Error) => void) {
     fastify.addHook("preValidation", authHook)

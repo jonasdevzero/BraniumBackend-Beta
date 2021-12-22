@@ -3,7 +3,7 @@ import { ServerRequest, ServerReply } from "../types/controller"
 import { User, ContactInvitation, PreRegistration } from "../models"
 import { userUtil, upload } from "../utils"
 import * as yup from "yup"
-import * as mailer from "../mailer"
+import * as mailer from "../utils/mailer"
 import { constant } from "../constant"
 
 // CTRL d > Implemet Socket Event Bellow

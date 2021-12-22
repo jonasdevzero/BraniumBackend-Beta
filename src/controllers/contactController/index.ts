@@ -1,7 +1,7 @@
 import { getRepository } from "typeorm"
 import { ServerRequest, ServerReply } from "../../types/controller"
 import { Contact, User, ContactInvitation } from "../../models"
-import socketEmit from ".././../socket/emit"
+import socketEmit from "../../socket/emit"
 
 export default {
     async show(req: ServerRequest, reply: ServerReply) {

@@ -16,7 +16,7 @@ const host = "0.0.0.0"
 const secret = process.env.USER_SECRET || "zero"
 const errorJwtMessages = {
     badRequestErrorMessage: "Sessão inválida!",
-    noAuthorizationInHeaderMessage: "Sessão não encontrada!",
+    noAuthorizationInHeaderMessage: "Sem autorização!",
     authorizationTokenExpiredMessage: "Sessão expirada!",
 }
 

@@ -1,26 +1,26 @@
 import { FastifyPluginOptions, FastifyInstance } from "fastify"
-import cMessagesController from "../../controllers/contact/messages"
-import schema from "../_schema/contactSchema/messages"
+import cMessagesController from "../../controllers/contactController/messagesController"
+import schema from "../_schema/contactSchema/messagesSchema"
 
 export default function contactMessagesRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions, done: (err?: Error) => void) {
     fastify.get("/:contact", {
-        schema: schema.index
+        schema: schema.index,
     }, cMessagesController.index)
 
     fastify.post("/", {
-        schema: {}
+        schema: schema.create,
     }, cMessagesController.create)
 
     fastify.patch("/view/:contact", {
-        schema: {}
+        schema: schema.view,
     }, cMessagesController.view)
 
     fastify.delete("/:message", {
-        schema: {}
+        schema: schema.deleteOne,
     }, cMessagesController.deleteOne)
 
     fastify.delete("/clear/:contact", {
-        schema: {}
+        schema: schema.clear,
     }, cMessagesController.clear)
 
     done()

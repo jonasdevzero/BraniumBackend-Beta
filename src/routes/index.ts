@@ -1,6 +1,6 @@
 import { FastifyPluginOptions, FastifyReply, FastifyInstance } from "fastify"
-import userRoutes from "./user"
-import contactRoutes from "./contact"
+import userRoutes from "./userRoutes"
+import contactRoutes from "./contactRoutes"
 
 export default function routes(fastify: FastifyInstance, _opts: FastifyPluginOptions, done: (err?: Error) => void) {
     fastify.addHook("onError", (_req, _reply, error, done) => {

@@ -1,6 +1,6 @@
 import { FastifyPluginOptions, FastifyInstance } from "fastify"
-import userController from "../controllers/user"
-import authHook from "../hooks/auth"
+import userController from "../controllers/userController"
+import authHook from "../hooks/authHook"
 import userSchema from "./_schema/userSchema"
 import { serializeAuth } from "./_preSerializer/userSerializer"
 
