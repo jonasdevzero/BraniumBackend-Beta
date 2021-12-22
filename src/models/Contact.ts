@@ -25,11 +25,11 @@ export default class Contact extends BaseEntity {
     @Column()
     you_blocked: boolean;
 
-    @ManyToOne(_ => User, user => user.contacts, { cascade: ["update"] })
+    @ManyToOne(_ => User, user => user.contacts, { cascade: ["update", "remove"] })
     @JoinColumn({ name: "user_id" })
     user: User;
 
-    @ManyToOne(_ => User, user => user.self_contacts, { cascade: ["update"] })
+    @ManyToOne(_ => User, user => user.self_contacts, { cascade: ["update", "remove"] })
     @JoinColumn({ name: "contact_user_id" })
     contact: User;
 

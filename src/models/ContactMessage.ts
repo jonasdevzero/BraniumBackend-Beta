@@ -25,7 +25,7 @@ export default class ContactMessage extends BaseEntity {
     @Column()
     created_at: Date;
 
-    @ManyToOne(_ => Contact, contact => contact.messages)
+    @ManyToOne(_ => Contact, contact => contact.messages, { cascade: ["update", "remove"] })
     @JoinColumn({ name: "contact_id" })
     contact: Contact;
 

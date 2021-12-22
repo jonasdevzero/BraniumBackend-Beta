@@ -52,7 +52,8 @@ export class createContactMessage1627309257892 implements MigrationInterface {
                     columnNames: ["contact_id"],
                     referencedTableName: "contact",
                     referencedColumnNames: ["id"],
-                    onUpdate: "CASCADE"
+                    onUpdate: "CASCADE",
+                    onDelete: "CASCADE",
                 }
             ]
         }))

@@ -15,7 +15,7 @@ export default class ContactMediaMessage extends BaseEntity {
     @Column()
     type: string
 
-    @ManyToOne(_ => ContactMessage, cMessage => cMessage.medias)
+    @ManyToOne(_ => ContactMessage, cMessage => cMessage.medias, { cascade: ["update", "remove"] })
     @JoinColumn({ name: "message_id" })
     message: ContactMessage    
 }

@@ -48,6 +48,7 @@ export class createContact1627308427763 implements MigrationInterface {
                     referencedTableName: "user",
                     referencedColumnNames: ["id"],
                     onUpdate: "CASCADE",
+                    onDelete: "CASCADE",
                 },
                 {
                     name: "ContactUserContact",
@@ -55,6 +56,7 @@ export class createContact1627308427763 implements MigrationInterface {
                     referencedTableName: "user",
                     referencedColumnNames: ["id"],
                     onUpdate: "CASCADE",
+                    onDelete: "CASCADE",
                 },
             ]
         }))

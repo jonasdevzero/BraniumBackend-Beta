@@ -35,6 +35,8 @@ export class createContactMediaMessage1640176488458 implements MigrationInterfac
                     columnNames: ["message_id"],
                     referencedTableName: "contact_message",
                     referencedColumnNames: ["id"],
+                    onUpdate: "CASCADE",
+                    onDelete: "CASCADE",
                 },
             ]
         }))
