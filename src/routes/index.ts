@@ -1,7 +1,6 @@
 import { FastifyPluginOptions, FastifyReply, FastifyInstance } from "fastify"
 import userRoutes from "./user"
 import contactRoutes from "./contact"
-import testController from "../controllers/test"
 
 export default function routes(fastify: FastifyInstance, _opts: FastifyPluginOptions, done: (err?: Error) => void) {
     fastify.addHook("onError", (_req, _reply, error, done) => {
@@ -14,8 +13,6 @@ export default function routes(fastify: FastifyInstance, _opts: FastifyPluginOpt
 
     fastify.register(userRoutes, { prefix: "/user" })
     fastify.register(contactRoutes, { prefix: "/contact" })
-
-    fastify.get("/test/email", testController.sendMail)
 
     done()
 }
