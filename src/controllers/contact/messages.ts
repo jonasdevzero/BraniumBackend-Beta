@@ -1,6 +1,6 @@
 import { getRepository } from "typeorm"
 import { ServerRequest, ServerReply } from "../../types/controller"
-import { Contact, ContactMessage } from "../../models"
+import { Contact, ContactMediaMessage, ContactMessage } from "../../models"
 import { upload } from "../../utils"
 import { v4 as uuidV4 } from "uuid"
 import socketEmit from "../../socket/emit"
@@ -33,6 +33,7 @@ export default {
                 take: limit,
                 skip,
                 order: { created_at: "DESC" },
+                relations: ["medias"],
             })
 
             reply.status(200).send({ messages })
@@ -46,9 +47,10 @@ export default {
             if (!req.isMultipart()) // for the future
                 return reply.status(400).send({ message: "Envie os dados no formato Multipart!" })
             
+                
             const sender_id = req.user.toString()
-            const { text, to } = upload.parseBody(req.body)
-
+            const { text, to, medias } = upload.parseBody(req.body)
+                
             const contactRepository = getRepository(Contact)
             const [sender, receiver] = await Promise.all([
                 contactRepository.findOne({ where: { user_id: sender_id, contact_user_id: to } }),
@@ -78,6 +80,22 @@ export default {
                 contactRepository.update(sender.id, { last_message_time: created_at }),
                 contactRepository.update(receiver.id, { unread_messages, last_message_time: created_at }),
             ])
+
+            if (medias && message && receiverMessage) {
+                const mediaRepository = getRepository(ContactMediaMessage)
+
+                const uploadedMedias = await Promise.all((Array.isArray(medias) ? medias : [medias]).map(m => upload.save(m)))
+                const [mediasSaved] = await Promise.all([
+                    Promise.all(uploadedMedias.map(m => {
+                        return mediaRepository.create({ message_id: message.id, url: m.Location, type: m.type }).save()
+                    })),
+                    Promise.all(uploadedMedias.map(m => {
+                        return mediaRepository.create({ message_id: receiverMessage.id, url: m.Location, type: m.type }).save()
+                    })),
+                ])
+
+                message.medias = mediasSaved
+            }
 
             socketEmit.contact.message(message, receiverMessage, to)
             reply.status(201).send({ message, to })

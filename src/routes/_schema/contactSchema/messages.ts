@@ -23,6 +23,18 @@ const index = {
                             bidirectional_id: { type: "string" },
                             viewed: { type: "boolean" },
                             created_at: { type: "string" },
+                            medias: {
+                                type: "array",
+                                items: {
+                                    type: "object",
+                                    properties: {
+                                        id: { type: "string" },
+                                        message_id: { type: "string" },
+                                        url: { type: "string" },
+                                        type: { type: "string" },
+                                    }
+                                }
+                            }
                         }
                     }
                 }
