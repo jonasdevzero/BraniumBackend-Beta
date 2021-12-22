@@ -46,8 +46,7 @@ export default {
         try {
             if (!req.isMultipart()) // for the future
                 return reply.status(400).send({ message: "Envie os dados no formato Multipart!" })
-            
-                
+                            
             const sender_id = req.user.toString()
             const { text, to, medias } = upload.parseBody(req.body)
                 

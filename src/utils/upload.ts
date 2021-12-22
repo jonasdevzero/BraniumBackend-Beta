@@ -57,7 +57,7 @@ export default {
     parseBody(body: any) {
         if (!body) return {};
         for (const key of Object.keys(body)) 
-            !Array.isArray(body[key]) ? body[key] = body[key].value : null;
+            !Array.isArray(body[key]) && !body[key]?.filename ? body[key] = body[key].value : null;
             
         return body
     },
