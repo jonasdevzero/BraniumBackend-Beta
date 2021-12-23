@@ -24,7 +24,8 @@ export class createContactMessage1627309257892 implements MigrationInterface {
                 {
                     name: "text",
                     type: "text",
-                    unsigned: true
+                    unsigned: true,
+                    isNullable: true,
                 },
                 {
                     name: "viewed",

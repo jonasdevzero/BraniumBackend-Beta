@@ -49,6 +49,9 @@ export default {
                             
             const sender_id = req.user.toString()
             const { text, to, medias } = upload.parseBody(req.body)
+
+            if (!text && !medias)
+                return reply.status(400).send({ message: "Você deve enviar algum dado!" })
                 
             const contactRepository = getRepository(Contact)
             const [sender, receiver] = await Promise.all([
