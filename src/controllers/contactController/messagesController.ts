@@ -87,7 +87,7 @@ export default {
                 const mediaRepository = getRepository(ContactMediaMessage)
 
                 const uploadedMedias = await Promise.all((Array.isArray(medias) ? medias : [medias]).map(m => upload.save(m)))
-                const [mediasSaved] = await Promise.all([
+                const [mediasSaved, receiverMediasSaved] = await Promise.all([
                     Promise.all(uploadedMedias.map(m => {
                         return mediaRepository.create({ message_id: message.id, url: m.Location, type: m.type }).save()
                     })),
@@ -97,6 +97,7 @@ export default {
                 ])
 
                 message.medias = mediasSaved
+                receiverMessage.medias = receiverMediasSaved
             }
 
             socketEmit.contact.message(message, receiverMessage, to)
