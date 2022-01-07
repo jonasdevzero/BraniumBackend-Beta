@@ -24,6 +24,6 @@ export function sendMail(to: string, subject: string, html: string) {
  * @param data The Data that must contains in the file
  */
 export function loadTemplate(name: string, data: any): Promise<string> {
-    const filename = path.join(path.resolve(path.dirname("")), "src", "utils", "mailer", "views", `${name}.ejs`)
+    const filename = path.join(path.resolve(path.dirname("")), "src", "api", "helpers", "mailer", "views", `${name}.ejs`)
     return ejs.renderFile(filename, data)
 }

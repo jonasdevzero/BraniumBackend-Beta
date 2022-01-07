@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply, DoneFuncWithErrOrRes } from "fastify"
-import { Contact } from "../../../models"
+import { Contact } from "../models"
 
 export default function serialize(_req: FastifyRequest, _reply: FastifyReply, payload: any, done: DoneFuncWithErrOrRes) {
     const { contact } = payload

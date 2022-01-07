@@ -1,5 +1,5 @@
 import "dotenv"
-import "./database"
+import "./api/database"
 import fastify from "fastify"
 import fastifyCors from "fastify-cors"
 import fastifyJwt from "fastify-jwt"
@@ -8,17 +8,13 @@ import fastifyStatic from "fastify-static"
 import cluster from "cluster"
 import { cpus } from "os"
 import path from "path"
-import routes from "./routes"
-import { socketServer } from "./socket"
+import routes from "./api/routes"
+import { socketServer } from "./api/websocket"
+import { constant } from "./config/constant"
 
-const port = process.env.PORT || 5000
-const host = "0.0.0.0"
-const secret = process.env.USER_SECRET || "zero"
-const errorJwtMessages = {
-    badRequestErrorMessage: "Sessão inválida!",
-    noAuthorizationInHeaderMessage: "Sem autorização!",
-    authorizationTokenExpiredMessage: "Sessão expirada!",
-}
+const PORT = process.env.PORT || 5000
+const HOST = "0.0.0.0"
+const SECRET = process.env.USER_SECRET || "zero"
 
 if (cluster.isPrimary) {
     for (let i = 0; i < cpus().length; i++) {
@@ -33,12 +29,12 @@ if (cluster.isPrimary) {
     const server = fastify({ logger: true })
     
     server.register(fastifyCors, { origin: "*", methods: ["GET", "POST", "PUT", "DELETE", "PATCH"] })
-    server.register(fastifyJwt, { secret, messages: errorJwtMessages })
+    server.register(fastifyJwt, { secret: SECRET, messages: constant.errorJwtMessages })
     server.register(fastifyStatic, { root: path.join(__dirname, "..", "uploads") })
     server.register(fastifyMultipart, { attachFieldsToBody: true })
     server.register(routes)
 
-    server.listen(port, host, async (err, address) => {
+    server.listen(PORT, HOST, async (err, address) => {
         if (err) {
             server.log.error(err)
             process.exit(1)

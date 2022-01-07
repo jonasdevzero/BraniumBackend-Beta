@@ -1,5 +1,5 @@
 import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, DeleteDateColumn, OneToMany, JoinColumn, BeforeInsert, BeforeUpdate } from "typeorm"
-import userUtil from "../utils/crypt"
+import userUtil from "../helpers/crypt"
 import Contact from "./Contact"
 import ContactInvitation from "./ContactInvitation"
 

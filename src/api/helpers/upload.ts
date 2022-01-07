@@ -45,7 +45,7 @@ export default {
                     resolve('ok')
                 } else {
                     const picture_key = key.split(`${process.env.UPLOADS_URL}/`)[1]
-                    await promisify(fs.unlink)(path.resolve(__dirname, "..", "..", "uploads", picture_key))
+                    await promisify(fs.unlink)(path.resolve(__dirname, "..", "..", "..", "uploads", picture_key))
                     resolve('ok')
                 };
             } catch (error) {

@@ -1,12 +1,10 @@
 import { getRepository, ILike, Not } from "typeorm"
-import { ServerRequest, ServerReply } from "../types/controller"
+import { ServerRequest, ServerReply } from "../interfaces/controller"
 import { User, ContactInvitation, PreRegistration } from "../models"
-import { userUtil, upload } from "../utils"
+import { userUtil, upload } from "../helpers"
 import * as yup from "yup"
-import * as mailer from "../utils/mailer"
-import { constant } from "../constant"
-
-// CTRL d > Implemet Socket Event Bellow
+import * as mailer from "../helpers/mailer"
+import { constant } from "../../config/constant"
 
 export default {
     async index(_req: ServerRequest, reply: ServerReply) {

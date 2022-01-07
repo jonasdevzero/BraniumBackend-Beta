@@ -1,8 +1,8 @@
 import { FastifyPluginOptions, FastifyInstance } from "fastify"
-import authHook from "../../hooks/authHook"
-import contactController from "../../controllers/contactController"
+import authHook from "../../hooks/auth"
+import ContactController from "../../controllers/ContactController"
 import contactSchema from "../_schema/contactSchema"
-import contactSerializer from "../_preSerializer/contactSerializer"
+import ContactView from "../../views/ContactView"
 import messagesRoutes from "./messagesRoutes"
 
 export default function contactRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions, done: (err?: Error) => void) {
@@ -10,25 +10,25 @@ export default function contactRoutes(fastify: FastifyInstance, _opts: FastifyPl
 
     fastify.get('/:id', {
         schema: contactSchema.show,
-        preSerialization: contactSerializer
-    }, contactController.show)
+        preSerialization: ContactView
+    }, ContactController.show)
 
     fastify.post('/invite/:id', {
         schema: contactSchema.invite
-    }, contactController.invite)
+    }, ContactController.invite)
 
     fastify.post('/invite/accept/:invite', {
         schema: contactSchema.acceptInvite,
-        preSerialization: contactSerializer
-    }, contactController.acceptInvite)
+        preSerialization: ContactView
+    }, ContactController.acceptInvite)
 
     fastify.post('/invite/refuse/:invite', {
         schema: contactSchema.refuseInvite
-    },  contactController.refuseInvite)
+    },  ContactController.refuseInvite)
 
     fastify.patch('/block/:id', {
         schema: contactSchema.block
-    }, contactController.block)
+    }, ContactController.block)
 
     fastify.register(messagesRoutes, { prefix: "/messages" })
 

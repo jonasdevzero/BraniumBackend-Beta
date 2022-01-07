@@ -1,9 +1,9 @@
 import { getRepository } from "typeorm"
-import { ServerRequest, ServerReply } from "../../types/controller"
+import { ServerRequest, ServerReply } from "../../interfaces/controller"
 import { Contact, ContactMediaMessage, ContactMessage } from "../../models"
-import { upload } from "../../utils"
+import { upload } from "../../helpers"
 import { v4 as uuidV4 } from "uuid"
-import socketEmit from "../../socket/emit"
+import socketEmit from "../../websocket/emit"
 
 // CTRL d > Implemet Socket Event Bellow
 

@@ -1,6 +1,6 @@
-import { wsUsers } from "./"
+import { wsUsers } from "."
 import { ContactInvitation, Contact, ContactMessage } from "../models"
-import { renderContact } from "../routes/_preSerializer/contactSerializer"
+import { renderContact } from "../views/ContactView"
 import * as Actions from "./actions"
 
 const emit = {

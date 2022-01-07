@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply, DoneFuncWithErrOrRes } from "fastify"
-import { User } from "../../models"
-import { renderContact } from "./contactSerializer"
+import { User } from "../models"
+import { renderContact } from "./ContactView"
 
 export function serializeAuth(_req: FastifyRequest, _reply: FastifyReply, payload: any, done: DoneFuncWithErrOrRes) {
     const { user } = payload
