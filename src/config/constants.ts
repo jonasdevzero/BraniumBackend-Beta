@@ -1,5 +1,5 @@
 
-export const constant = {
+export const constants = {
     client: {
         routes: {
             forgotPassword: (token: string) => `${process.env.CLIENT_URL}/resetar-senha/${token}`,

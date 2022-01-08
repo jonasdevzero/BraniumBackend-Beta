@@ -10,7 +10,7 @@ import { cpus } from "os"
 import path from "path"
 import routes from "./api/routes"
 import { socketServer } from "./api/websocket"
-import { constant } from "./config/constant"
+import { constants } from "./config/constants"
 
 const PORT = process.env.PORT || 5000
 const HOST = "0.0.0.0"
@@ -29,7 +29,7 @@ if (cluster.isPrimary) {
     const server = fastify({ logger: true })
     
     server.register(fastifyCors, { origin: "*", methods: ["GET", "POST", "PUT", "DELETE", "PATCH"] })
-    server.register(fastifyJwt, { secret: SECRET, messages: constant.errorJwtMessages })
+    server.register(fastifyJwt, { secret: SECRET, messages: constants.errorJwtMessages })
     server.register(fastifyStatic, { root: path.join(__dirname, "..", "uploads") })
     server.register(fastifyMultipart, { attachFieldsToBody: true })
     server.register(routes)

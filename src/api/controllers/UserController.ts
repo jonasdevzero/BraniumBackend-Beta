@@ -4,7 +4,7 @@ import { User, ContactInvitation, PreRegistration } from "../models"
 import { userUtil, upload } from "../helpers"
 import * as yup from "yup"
 import * as mailer from "../helpers/mailer"
-import { constant } from "../../config/constant"
+import { constants } from "../../config/constants"
 
 export default {
     async index(req: ServerRequest, reply: ServerReply) {
@@ -86,7 +86,7 @@ export default {
 
             const preRegistration = await preRegistrationRepo.create({ name, email }).save()
 
-            const link = constant.client.routes.completeRegistration(preRegistration.id)
+            const link = constants.client.routes.completeRegistration(preRegistration.id)
             const template = await mailer.loadTemplate("completeRegistration", { link, name })
             mailer.sendMail(email, "Completar cadastro!", template)
 
@@ -343,7 +343,7 @@ export default {
             const { id } = user
             await userRepository.update(id, { reset_token, expire_token })
 
-            const link = constant.client.routes.forgotPassword(reset_token)
+            const link = constants.client.routes.forgotPassword(reset_token)
             const template = await mailer.loadTemplate("forgotPassword", { link })
             mailer.sendMail(email, "Resetar sua senha", template)
 
