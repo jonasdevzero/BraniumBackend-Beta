@@ -7,12 +7,19 @@ import * as mailer from "../helpers/mailer"
 import { constant } from "../../config/constant"
 
 export default {
-    async index(_req: ServerRequest, reply: ServerReply) {
+    async index(req: ServerRequest, reply: ServerReply) {
         try {
-            const userRepository = getRepository(User)
-            const user = await userRepository.find()
+            let { take, page } = req.query
 
-            // create pagination here...
+            take = take > 0 ? take : 20
+            page = (page > 0 ? page : 0) * take
+
+            const userRepository = getRepository(User)
+            const user = await userRepository.find({
+                take,
+                skip: page,
+                order: { created_at: "DESC" },
+            })
 
             reply.status(200).send({ user })
         } catch (error) {
