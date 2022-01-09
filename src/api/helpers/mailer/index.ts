@@ -2,7 +2,7 @@ import sgMail from "@sendgrid/mail"
 import ejs from "ejs"
 import path from "path"
 
-const API_KEY = process.env.SENDGRID_KEY || ""
+const API_KEY = process.env.SENDGRID_KEY || "SG."
 
 sgMail.setApiKey(API_KEY)
 
