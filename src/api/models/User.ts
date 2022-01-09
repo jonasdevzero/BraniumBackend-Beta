@@ -11,22 +11,22 @@ export default class User extends BaseEntity {
     @Column()
     name: string;
 
-    @Column()
+    @Column({ unique: true })
     username: string;
 
-    @Column()
+    @Column({ unique: true })
     email: string;
 
     @Column()
     password: string;
 
-    @Column()
+    @Column({ nullable: true, default: null })
     picture: string;
 
-    @Column()
+    @Column({ nullable: true, default: null, unique: true })
     reset_token: string;
 
-    @Column()
+    @Column({ nullable: true, default: null })
     expire_token: Date;
 
     @Column()
@@ -35,7 +35,7 @@ export default class User extends BaseEntity {
     @Column()
     updated_at: Date;
 
-    @DeleteDateColumn()
+    @DeleteDateColumn({ nullable: true, default: null })
     deleted_at: Date;
 
     @OneToMany(_ => Contact, contact => contact.user)
