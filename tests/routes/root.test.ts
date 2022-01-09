@@ -1,9 +1,9 @@
-import { build } from "../helper"
+import { build } from "../helper";
 
 describe("root tests", () => {
-  const app = build()
+  const app = build();
 
-  test("default root tests", async () => {
+  test("default root test", async () => {
     const res = await app.inject({
       url: "/",
     });
