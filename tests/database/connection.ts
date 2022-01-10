@@ -2,19 +2,21 @@ import { createConnection, getConnection } from "typeorm";
 
 export default {
   async connect() {
-    const entities = "./src/api/models/*.ts";
-    const migrations = "./src/api/database/migrations/*.ts";
+    const url = process.env.TYPEORM_TEST_URL as string
+    const entities = process.env.TYPEORM_ENTITIES as string
+    const migrations = process.env.TYPEORM_MIGRATIONS as string
+    const migrationsDir = process.env.TYPEORM_MIGRATIONS_DIR as string
 
     return await createConnection({
       type: "postgres",
-      url: "postgres://postgres:postgres@localhost:5432/branium_test",
+      url,
       synchronize: true,
       logging: false,
       dropSchema: true,
       entities: [entities],
       migrations: [migrations],
       cli: {
-        migrationsDir: "./src/api/database/migrations",
+        migrationsDir,
       },
     });
   },

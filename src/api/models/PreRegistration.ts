@@ -11,6 +11,6 @@ export default class PreRegistration extends BaseEntity {
     @Column()
     email: string;
 
-    @Column()
+    @Column({ default: true })
     pending: boolean;
 }
