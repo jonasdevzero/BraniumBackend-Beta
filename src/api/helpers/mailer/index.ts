@@ -1,21 +1,24 @@
-import sgMail from "@sendgrid/mail"
-import ejs from "ejs"
-import path from "path"
+import sgMail from '@sendgrid/mail';
+import ejs from 'ejs';
+import path from 'path';
 
-const API_KEY = process.env.SENDGRID_KEY || "SG."
+const API_KEY = process.env.SENDGRID_KEY || 'SG.';
+const nodeEnv = process.env.NODE_ENV;
 
-sgMail.setApiKey(API_KEY)
+sgMail.setApiKey(API_KEY);
 
 /**
  * Sends mails
  */
 export function sendMail(to: string, subject: string, html: string) {
-    return sgMail.send({
-        from: "devzerotest@gmail.com",
-        to,
-        subject,
-        html,
-    })
+    return nodeEnv === 'test'
+        ? new Promise(resolve => resolve('ok'))
+        : sgMail.send({
+              from: 'devzerotest@gmail.com',
+              to,
+              subject,
+              html,
+          });
 }
 
 /**
@@ -24,6 +27,14 @@ export function sendMail(to: string, subject: string, html: string) {
  * @param data The Data that must contains in the file
  */
 export function loadTemplate(name: string, data: any): Promise<string> {
-    const filename = path.join(path.resolve(path.dirname("")), "src", "api", "helpers", "mailer", "views", `${name}.ejs`)
-    return ejs.renderFile(filename, data)
+    const filename = path.join(
+        path.resolve(path.dirname('')),
+        'src',
+        'api',
+        'helpers',
+        'mailer',
+        'views',
+        `${name}.ejs`,
+    );
+    return ejs.renderFile(filename, data);
 }
