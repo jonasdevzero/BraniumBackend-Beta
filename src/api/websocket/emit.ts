@@ -1,4 +1,4 @@
-import { wsUsers } from "."
+import { wsUsers } from "./connection"
 import { ContactInvitation, Contact, ContactMessage } from "../models"
 import { renderContact } from "../views/ContactView"
 import * as Actions from "./actions"

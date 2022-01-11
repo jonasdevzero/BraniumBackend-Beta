@@ -2,7 +2,6 @@ import './api/database';
 import cluster from 'cluster';
 import { cpus } from 'os';
 import App from './app';
-import { socketServer } from './api/websocket';
 
 const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0';
@@ -25,7 +24,6 @@ if (cluster.isPrimary) {
             process.exit(1);
         }
 
-        socketServer(server);
         server.log.info(`server listening on ${address}`);
     });
 }
