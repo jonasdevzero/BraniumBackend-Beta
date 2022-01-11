@@ -1,12 +1,18 @@
 import App from "../src/app";
 import db_test from "./database/connection";
+import { socketConnection } from "../src/api/websocket/connection";
 
 function build() {
   const app = App();
 
   beforeAll(async () => {
     await db_test.connect();
-    await app.ready();
+
+    app.ready(err => {
+        if (err) throw err;
+
+        app.ws.on('connection', socket => socketConnection(socket, app));
+    });
   });
   
   afterAll(async () => {
