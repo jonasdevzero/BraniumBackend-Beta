@@ -1,21 +1,30 @@
-import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from "typeorm"
-import { ContactMessage } from "."
+import {
+    Entity,
+    BaseEntity,
+    PrimaryGeneratedColumn,
+    Column,
+    ManyToOne,
+    JoinColumn,
+} from 'typeorm';
+import { ContactMessage } from '.';
 
-@Entity("contact_media_message")
+@Entity('contact_media_message')
 export default class ContactMediaMessage extends BaseEntity {
-    @PrimaryGeneratedColumn("uuid")
-    id: string
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
     @Column()
-    message_id: string
+    message_id: string;
 
     @Column()
-    url: string
+    url: string;
 
     @Column()
-    type: string
+    type: string;
 
-    @ManyToOne(_ => ContactMessage, cMessage => cMessage.medias, { cascade: ["update", "remove"] })
-    @JoinColumn({ name: "message_id" })
-    message: ContactMessage    
+    @ManyToOne(_ => ContactMessage, cMessage => cMessage.medias, {
+        cascade: ['update', 'remove'],
+    })
+    @JoinColumn({ name: 'message_id' })
+    message: ContactMessage;
 }

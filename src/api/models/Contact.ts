@@ -1,16 +1,25 @@
-import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, BeforeInsert } from "typeorm"
-import ContactMessage from "./ContactMessage"
-import User from "./User"
+import {
+    Entity,
+    BaseEntity,
+    PrimaryGeneratedColumn,
+    Column,
+    ManyToOne,
+    JoinColumn,
+    OneToMany,
+    BeforeInsert,
+} from 'typeorm';
+import ContactMessage from './ContactMessage';
+import User from './User';
 
-@Entity("contact")
+@Entity('contact')
 export default class Contact extends BaseEntity {
-    @PrimaryGeneratedColumn("uuid")
+    @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column("uuid")
+    @Column('uuid')
     user_id: string;
 
-    @Column("uuid")
+    @Column('uuid')
     contact_user_id: string;
 
     @Column()
@@ -25,23 +34,27 @@ export default class Contact extends BaseEntity {
     @Column()
     you_blocked: boolean;
 
-    @ManyToOne(_ => User, user => user.contacts, { cascade: ["update", "remove"] })
-    @JoinColumn({ name: "user_id" })
+    @ManyToOne(_ => User, user => user.contacts, {
+        cascade: ['update', 'remove'],
+    })
+    @JoinColumn({ name: 'user_id' })
     user: User;
 
-    @ManyToOne(_ => User, user => user.self_contacts, { cascade: ["update", "remove"] })
-    @JoinColumn({ name: "contact_user_id" })
+    @ManyToOne(_ => User, user => user.self_contacts, {
+        cascade: ['update', 'remove'],
+    })
+    @JoinColumn({ name: 'contact_user_id' })
     contact: User;
 
     @OneToMany(_ => ContactMessage, c_message => c_message.contact)
-    @JoinColumn({ name: "contact_id" })
+    @JoinColumn({ name: 'contact_id' })
     messages: ContactMessage[];
 
     @BeforeInsert()
     private beforeInsert() {
-        this.last_message_time = new Date()
-        this.unread_messages = 0
-        this.blocked = false
-        this.you_blocked = false
+        this.last_message_time = new Date();
+        this.unread_messages = 0;
+        this.blocked = false;
+        this.you_blocked = false;
     }
 }

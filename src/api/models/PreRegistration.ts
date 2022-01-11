@@ -1,8 +1,8 @@
-import { Entity, BaseEntity, PrimaryGeneratedColumn, Column } from "typeorm"
+import { Entity, BaseEntity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-@Entity("pre_registration")
+@Entity('pre_registration')
 export default class PreRegistration extends BaseEntity {
-    @PrimaryGeneratedColumn("uuid")
+    @PrimaryGeneratedColumn('uuid')
     id: string;
 
     @Column()

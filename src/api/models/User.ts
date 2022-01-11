@@ -1,11 +1,21 @@
-import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, DeleteDateColumn, OneToMany, JoinColumn, BeforeInsert, BeforeUpdate } from "typeorm"
-import userUtil from "../helpers/crypt"
-import Contact from "./Contact"
-import ContactInvitation from "./ContactInvitation"
+import {
+    Entity,
+    BaseEntity,
+    PrimaryGeneratedColumn,
+    Column,
+    DeleteDateColumn,
+    OneToMany,
+    JoinColumn,
+    BeforeInsert,
+    BeforeUpdate,
+} from 'typeorm';
+import userUtil from '../helpers/crypt';
+import Contact from './Contact';
+import ContactInvitation from './ContactInvitation';
 
-@Entity("user")
+@Entity('user')
 export default class User extends BaseEntity {
-    @PrimaryGeneratedColumn("uuid")
+    @PrimaryGeneratedColumn('uuid')
     id: string;
 
     @Column()
@@ -39,15 +49,15 @@ export default class User extends BaseEntity {
     deleted_at: Date;
 
     @OneToMany(_ => Contact, contact => contact.user)
-    @JoinColumn({ name: "user_id" })
+    @JoinColumn({ name: 'user_id' })
     contacts: Contact[];
-    
+
     @OneToMany(_ => Contact, contact => contact.contact)
-    @JoinColumn({ name: "contact_user_id" })
+    @JoinColumn({ name: 'contact_user_id' })
     self_contacts: Contact[];
 
     @OneToMany(_ => ContactInvitation, c_invitation => c_invitation.user)
-    @JoinColumn({ name: "receiver_id" })
+    @JoinColumn({ name: 'receiver_id' })
     contact_invitations: ContactInvitation[];
 
     @OneToMany(_ => ContactInvitation, c_invitation => c_invitation.sender)
@@ -55,15 +65,15 @@ export default class User extends BaseEntity {
 
     @BeforeInsert()
     private beforeInsert() {
-        const date = new Date()
-        this.created_at = date 
-        this.updated_at = date
+        const date = new Date();
+        this.created_at = date;
+        this.updated_at = date;
 
-        this.password = userUtil.encryptPassword(this.password)
-    };
+        this.password = userUtil.encryptPassword(this.password);
+    }
 
     @BeforeUpdate()
     private beforeUpdate() {
-        this.updated_at = new Date()
+        this.updated_at = new Date();
     }
 }
