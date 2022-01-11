@@ -137,7 +137,7 @@ describe('user routes tests', () => {
 
     test('update picture route test', async () => {
         const form = new FormData();
-        form.append('picture', fs.createReadStream('./tests/img/picture.jpg'));
+        form.append('picture', fs.createReadStream('./tests/assets/picture.jpg'));
 
         const res = await app.inject({
             method: 'PATCH',
@@ -215,7 +215,7 @@ describe('user routes tests', () => {
     });
 
     test('search route test', async () => {
-        // cpre register a new user
+        // pre register a new user
         await app.inject({
             method: 'POST',
             url: '/user/pre_registration',

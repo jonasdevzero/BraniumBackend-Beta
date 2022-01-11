@@ -1,5 +1,5 @@
 import App from "../src/app";
-import db_test from "./database/connection";
+import db_test from "./database";
 import { socketConnection } from "../src/api/websocket/connection";
 
 function build() {

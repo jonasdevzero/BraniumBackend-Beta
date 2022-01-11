@@ -122,7 +122,9 @@ export default {
                 link,
                 name,
             });
-            mailer.sendMail(email, 'Completar cadastro!', template);
+            mailer
+                .sendMail(email, 'Completar cadastro!', template)
+                .catch(() => {});
 
             reply.status(201).send({ message: 'Verifique seu e-mail!' });
         } catch (error) {
@@ -406,12 +408,10 @@ export default {
                     upload.save(picture),
                     user.picture ? upload.remove(user.picture) : null,
                 ]).catch(error =>
-                    reply
-                        .status(500)
-                        .send({
-                            message: 'Não foi possível atualizar a imagem!',
-                            error,
-                        }),
+                    reply.status(500).send({
+                        message: 'Não foi possível atualizar a imagem!',
+                        error,
+                    }),
                 );
 
                 location = Location;
@@ -421,11 +421,9 @@ export default {
                     upload.remove(user.picture),
                     userRepository.update(id, { picture: undefined }),
                 ]).catch(() =>
-                    reply
-                        .status(500)
-                        .send({
-                            message: 'Não foi possível remover a imagem!',
-                        }),
+                    reply.status(500).send({
+                        message: 'Não foi possível remover a imagem!',
+                    }),
                 );
             }
 
@@ -463,7 +461,9 @@ export default {
             const template = await mailer.loadTemplate('forgotPassword', {
                 link,
             });
-            mailer.sendMail(email, 'Resetar sua senha', template);
+            mailer
+                .sendMail(email, 'Resetar sua senha', template)
+                .catch(() => {});
 
             reply.status(200).send({ message: 'Verifique seu email' });
         } catch (error) {
