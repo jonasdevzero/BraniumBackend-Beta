@@ -2,6 +2,7 @@ import './api/database';
 import cluster from 'cluster';
 import { cpus } from 'os';
 import App from './app';
+import { socketConnection } from './api/websocket/connection';
 
 const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0';
@@ -17,6 +18,12 @@ if (cluster.isPrimary) {
     });
 } else {
     const server = App({ logger: true });
+
+    server.ready(err => {
+        if (err) throw err;
+
+        server.ws.on('connection', socket => socketConnection(socket, server));
+    });
 
     server.listen(PORT, HOST, async (err, address) => {
         if (err) {
