@@ -1,6 +1,7 @@
 import { FastifyPluginOptions, FastifyInstance } from "fastify"
 import userRoutes from "./userRoutes"
 import contactRoutes from "./contactRoutes"
+import groupRoutes from "./groupRoutes"
 
 export default function routes(fastify: FastifyInstance, _opts: FastifyPluginOptions, done: (err?: Error) => void) {
     fastify.addHook("onError", (_req, _reply, error, done) => {
@@ -13,6 +14,7 @@ export default function routes(fastify: FastifyInstance, _opts: FastifyPluginOpt
 
     fastify.register(userRoutes, { prefix: "/user" })
     fastify.register(contactRoutes, { prefix: "/contact" })
+    fastify.register(groupRoutes, { prefix: '/group' })
 
     done()
 }

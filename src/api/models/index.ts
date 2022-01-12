@@ -4,3 +4,8 @@ export { default as ContactInvitation } from './ContactInvitation';
 export { default as ContactMessage } from './ContactMessage';
 export { default as PreRegistration } from './PreRegistration';
 export { default as ContactMediaMessage } from './ContactMediaMessage';
+export { default as Group } from './Group';
+export { default as GroupUser } from './GroupUser';
+export { default as GroupMessage } from './GroupMessage';
+export { default as GroupMessageView } from './GroupMessageView';
+export { default as GroupMediaMessage } from './GroupMediaMessage';

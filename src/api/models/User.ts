@@ -9,6 +9,7 @@ import {
     BeforeInsert,
     BeforeUpdate,
 } from 'typeorm';
+import { Group, GroupMessage, GroupMessageView, GroupUser } from '.';
 import userUtil from '../helpers/crypt';
 import Contact from './Contact';
 import ContactInvitation from './ContactInvitation';
@@ -52,16 +53,9 @@ export default class User extends BaseEntity {
     @JoinColumn({ name: 'user_id' })
     contacts: Contact[];
 
-    @OneToMany(_ => Contact, contact => contact.contact)
-    @JoinColumn({ name: 'contact_user_id' })
-    self_contacts: Contact[];
-
-    @OneToMany(_ => ContactInvitation, c_invitation => c_invitation.user)
-    @JoinColumn({ name: 'receiver_id' })
-    contact_invitations: ContactInvitation[];
-
-    @OneToMany(_ => ContactInvitation, c_invitation => c_invitation.sender)
-    invitations_sent: ContactInvitation[];
+    @OneToMany(_ => GroupUser, group_u => group_u.user)
+    @JoinColumn({ name: 'user_id' })
+    groups: GroupUser[];
 
     @BeforeInsert()
     private beforeInsert() {
@@ -76,4 +70,33 @@ export default class User extends BaseEntity {
     private beforeUpdate() {
         this.updated_at = new Date();
     }
+
+    /* --------- Aditional Data ----------- */
+
+    @OneToMany(_ => Contact, contact => contact.contact)
+    @JoinColumn({ name: 'contact_user_id' })
+    self_contacts: Contact[];
+
+    @OneToMany(_ => ContactInvitation, c_invitation => c_invitation.user)
+    @JoinColumn({ name: 'receiver_id' })
+    contact_invitations: ContactInvitation[];
+
+    @OneToMany(_ => ContactInvitation, c_invitation => c_invitation.sender)
+    invitations_sent: ContactInvitation[];
+
+    @OneToMany(_ => Group, group => group.creator)
+    @JoinColumn({ name: 'created_by' })
+    created_groups: Group[];
+
+    @OneToMany(_ => Group, group => group.leader)
+    @JoinColumn({ name: 'leader_id' })
+    groups_as_leader: Group[];
+
+    @OneToMany(_ => GroupMessage, message => message.sender)
+    @JoinColumn({ name: 'sender_id' })
+    group_messages_sent: GroupMessage[];
+
+    @OneToMany(_ => GroupMessageView, view => view.viewer)
+    @JoinColumn({ name: 'viewer_id' })
+    group_messages_viewed: GroupMessageView[]
 }
