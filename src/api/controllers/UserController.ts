@@ -281,6 +281,8 @@ export default {
                     { receiver: id },
                 )
                 .leftJoinAndSelect('c_invitation.sender', 'invitation_sender')
+                .leftJoinAndSelect('user.groups', 'groups')
+                .leftJoinAndSelect('groups.group', 'group')
                 .withDeleted()
                 .getOne();
 

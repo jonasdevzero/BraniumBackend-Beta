@@ -1,21 +1,38 @@
-import { FastifyRequest, FastifyReply, DoneFuncWithErrOrRes } from "fastify"
-import { User } from "../models"
-import { renderContact } from "./ContactView"
+import { FastifyRequest, FastifyReply, DoneFuncWithErrOrRes } from 'fastify';
+import { User } from '../models';
+import { renderContact } from './ContactView';
+import { renderGroupsFromUser } from './GroupView';
 
-export function serializeAuth(_req: FastifyRequest, _reply: FastifyReply, payload: any, done: DoneFuncWithErrOrRes) {
-    const { user } = payload
-    user ? done(null, { user: renderUser(user) }) : done(null, payload)
+export function serializeAuth(
+    _req: FastifyRequest,
+    _reply: FastifyReply,
+    payload: any,
+    done: DoneFuncWithErrOrRes,
+) {
+    const { user } = payload;
+    user ? done(null, { user: renderUser(user) }) : done(null, payload);
 }
 
 function renderUser(user: User) {
-    const { id, name, username, picture, email, contacts, contact_invitations } = user 
-        return {
-            id,
-            name,
-            username,
-            email,
-            picture,
-            contact_invitations: contact_invitations,
-            contacts: renderContact(contacts),
-        }
+    const {
+        id,
+        name,
+        username,
+        picture,
+        email,
+        contacts,
+        contact_invitations,
+        groups,
+    } = user;
+
+    return {
+        id,
+        name,
+        username,
+        email,
+        picture,
+        contact_invitations: contact_invitations,
+        contacts: renderContact(contacts),
+        groups: renderGroupsFromUser(groups),
+    };
 }
