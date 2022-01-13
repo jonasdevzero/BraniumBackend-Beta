@@ -1,6 +1,7 @@
 import { FastifyPluginOptions, FastifyInstance } from 'fastify';
 import authHook from '../../hooks/auth';
 import GroupController from '../../controllers/GroupController';
+import schema from '../_schema/groupSchema';
 import usersRoutes from './usersRoutes';
 import messagesRoutes from './messagesRoutes';
 
@@ -11,20 +12,56 @@ export default function groupRoutes(
 ) {
     fastify.addHook('preValidation', authHook);
 
-    fastify.get('/:id', {}, GroupController.show);
+    fastify.get(
+        '/:id',
+        {
+            schema: schema.show,
+        },
+        GroupController.show,
+    );
 
-    fastify.post('/', {}, GroupController.create);
+    fastify.post(
+        '/',
+        {
+            schema: schema.create,
+        },
+        GroupController.create,
+    );
 
-    fastify.put('/:id', {}, GroupController.update);
+    fastify.put(
+        '/:id',
+        {
+            schema: schema.update,
+        },
+        GroupController.update,
+    );
 
-    fastify.patch('/:id/picture', {}, GroupController.update_picture);
+    fastify.patch(
+        '/:id/picture',
+        {
+            schema: schema.update_picture,
+        },
+        GroupController.update_picture,
+    );
 
-    fastify.post('/:id/leave', {}, GroupController.leave);
+    fastify.post(
+        '/:id/leave',
+        {
+            schema: schema.leave,
+        },
+        GroupController.leave,
+    );
 
-    fastify.delete('/:id', {}, GroupController.delete);
+    fastify.delete(
+        '/:id',
+        {
+            schema: schema.deleteGroup,
+        },
+        GroupController.delete,
+    );
 
-    fastify.register(usersRoutes, { prefix: '/users' })
-    fastify.register(messagesRoutes, { prefix: '/messages' })
+    fastify.register(usersRoutes, { prefix: '/users' });
+    fastify.register(messagesRoutes, { prefix: '/messages' });
 
     done();
 }
