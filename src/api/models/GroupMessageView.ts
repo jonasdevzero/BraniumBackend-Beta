@@ -9,10 +9,10 @@ export default class GroupMessageView extends BaseEntity {
     @Column({ type: 'uuid', unsigned: true })
     message_id: string;
 
-    @Column({ default: true, unsigned: true })
+    @Column({ default: false })
     viewed: boolean;
 
-    @Column()
+    @Column({ nullable: true })
     viewed_at: Date;
 
     @Column({ type: 'uuid', unsigned: true })

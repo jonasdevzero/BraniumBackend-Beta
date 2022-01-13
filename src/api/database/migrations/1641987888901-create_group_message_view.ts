@@ -24,12 +24,12 @@ export class createGroupMessageView1641987888901 implements MigrationInterface {
                     {
                         name: 'viewed',
                         type: 'boolean',
-                        default: true,
-                        unsigned: true,
+                        default: false,
                     },
                     {
                         name: 'viewed_at',
                         type: 'timestamp with time zone',
+                        isNullable: true,
                     },
                     {
                         name: 'viewer_id',
