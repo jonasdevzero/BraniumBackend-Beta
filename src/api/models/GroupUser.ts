@@ -40,6 +40,6 @@ export default class GroupUser extends BaseEntity {
     @ManyToOne(_ => User, user => user.groups, {
         cascade: ['update', 'remove'],
     })
-    @JoinColumn({ name: 'group_id' })
+    @JoinColumn({ name: 'user_id' })
     user: User;
 }

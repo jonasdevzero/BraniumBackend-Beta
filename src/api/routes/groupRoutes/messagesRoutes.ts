@@ -24,7 +24,7 @@ export default function messagesRoutes(
     );
 
     fastify.patch(
-        '/view',
+        '/:group_id/view',
         {
             schema: schema.view,
         },
