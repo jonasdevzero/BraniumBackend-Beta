@@ -1,4 +1,3 @@
-import { group } from 'console';
 import {
     Entity,
     BaseEntity,
@@ -29,14 +28,17 @@ export default class GroupUser extends BaseEntity {
     @Column()
     role_since: Date;
 
+    @Column({ unsigned: true })
+    member_since: Date;
+
     @ManyToOne(_ => Group, group => group.users, {
-        cascade: ['update', 'remove']
+        cascade: ['update', 'remove'],
     })
     @JoinColumn({ name: 'group_id' })
     group: Group;
 
     @ManyToOne(_ => User, user => user.groups, {
-        cascade: ['update', 'remove']
+        cascade: ['update', 'remove'],
     })
     @JoinColumn({ name: 'group_id' })
     user: User;

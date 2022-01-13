@@ -37,8 +37,13 @@ export class createGroupUser1641987841198 implements MigrationInterface {
                     },
                     {
                         name: 'role_since',
-                        type: 'timestamp with time zone'
-                    }
+                        type: 'timestamp with time zone',
+                    },
+                    {
+                        name: 'member_since',
+                        type: 'timestamp with time zone',
+                        unsigned: true,
+                    },
                 ],
                 foreignKeys: [
                     {
