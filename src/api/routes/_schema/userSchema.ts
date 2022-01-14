@@ -174,10 +174,7 @@ const auth = {
                                     created_at: { type: 'string' },
                                     leader_id: { type: 'string' },
                                     role: { type: 'number' },
-                                    unread_messages: {
-                                        type: 'number',
-                                        nullable: true,
-                                    },
+                                    unread_messages: { type: 'number' },
                                     messages: { type: 'array', items: {} },
                                     users: {
                                         type: 'array',
