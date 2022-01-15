@@ -86,12 +86,17 @@ export default {
                 getRepository(Group).update(to, {
                     last_message_time: created_at,
                 }),
-                ...members
-                    .filter(m => m.user_id !== sender_id)
-                    .map(m => {
-                        const unread_messages = (m.unread_messages || 0) + 1;
-                        return groupUserRepo.update(m.id, { unread_messages });
-                    }),
+                Promise.all(
+                    members
+                        .filter(m => m.user_id !== sender_id)
+                        .map(m => {
+                            const unread_messages =
+                                (m.unread_messages || 0) + 1;
+                            return groupUserRepo.update(m.id, {
+                                unread_messages,
+                            });
+                        }),
+                ),
             ]);
             const groupMessageViewRepo = getRepository(GroupMessageView);
             await Promise.all(
