@@ -2,6 +2,7 @@ import { FastifyPluginOptions, FastifyInstance } from 'fastify';
 import authHook from '../../hooks/auth';
 import GroupController from '../../controllers/GroupController';
 import schema from '../_schema/groupSchema';
+import serializeGroup from '../../views/GroupView';
 import usersRoutes from './usersRoutes';
 import messagesRoutes from './messagesRoutes';
 
@@ -16,6 +17,7 @@ export default function groupRoutes(
         '/:id',
         {
             schema: schema.show,
+            preSerialization: serializeGroup,
         },
         GroupController.show,
     );
@@ -24,6 +26,7 @@ export default function groupRoutes(
         '/',
         {
             schema: schema.create,
+            preSerialization: serializeGroup,
         },
         GroupController.create,
     );

@@ -1,5 +1,6 @@
 import { FastifyPluginOptions, FastifyInstance } from 'fastify';
 import UsersController from '../../controllers/GroupController/UsersController';
+import { serializeGroupUsers } from '../../views/GroupUserView';
 import schema from '../_schema/groupSchema/usersSchema';
 
 export default function usersRoutes(
@@ -11,6 +12,7 @@ export default function usersRoutes(
         '/:group_id',
         {
             schema: schema.index,
+            preSerialization: serializeGroupUsers("users")
         },
         UsersController.index,
     );
@@ -19,6 +21,7 @@ export default function usersRoutes(
         '/',
         {
             schema: schema.add,
+            preSerialization: serializeGroupUsers("member")
         },
         UsersController.add,
     );
