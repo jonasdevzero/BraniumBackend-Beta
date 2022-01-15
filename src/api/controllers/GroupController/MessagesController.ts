@@ -51,7 +51,12 @@ export default {
                     .send({ message: 'Envie os dados no formato Multipart!' });
 
             const sender_id = req.user as string;
-            const { text, to, medias } = req.body;
+            const { text, to, medias } = upload.parseBody(req.body);
+
+            if (!text && !medias)
+                return reply
+                    .status(400)
+                    .send({ message: 'Você deve ser enviar algum dado!' });
 
             const groupUserRepo = getRepository(GroupUser);
             const members = await groupUserRepo.find({
@@ -70,12 +75,14 @@ export default {
             const created_at = new Date();
 
             const [message] = await Promise.all([
-                getRepository(GroupMessage).create({
-                    group_id: to,
-                    sender_id,
-                    text,
-                    created_at,
-                }),
+                getRepository(GroupMessage)
+                    .create({
+                        group_id: to,
+                        sender_id,
+                        text,
+                        created_at,
+                    })
+                    .save(),
                 getRepository(Group).update(to, {
                     last_message_time: created_at,
                 }),
@@ -87,19 +94,20 @@ export default {
                     }),
             ]);
             const groupMessageViewRepo = getRepository(GroupMessageView);
-            const views = await Promise.all(
+            await Promise.all(
                 members
                     .filter(m => m.user_id !== sender_id)
                     .map(m => {
-                        return groupMessageViewRepo.create({
-                            message_id: message.id,
-                            viewer_id: m.user_id,
-                        });
+                        return groupMessageViewRepo
+                            .create({
+                                message_id: message.id,
+                                viewer_id: m.user_id,
+                            })
+                            .save();
                     }),
             );
 
             message.sender = sender.user;
-            message.views = views;
 
             if (medias) {
                 const mediaRepository = getRepository(GroupMediaMessage);
@@ -145,9 +153,13 @@ export default {
                     .send({ message: 'Você não está no grupo!' });
 
             const groupMessageViewRepo = getRepository(GroupMessageView);
-            const unviewedMessages = await groupMessageViewRepo.find({
-                where: { group_id, viewer_id: id, viewed: false },
-            });
+            const unviewedMessages = await groupMessageViewRepo
+                .createQueryBuilder('view')
+                .leftJoinAndSelect('view.message', 'message')
+                .where('view.viewer_id = :viewer_id', { viewer_id: id })
+                .andWhere('view.viewed = :viewed', { viewed: false })
+                .andWhere('message.group_id = :group_id', { group_id })
+                .getMany();
 
             const viewed_at = new Date();
             await Promise.all([
@@ -162,6 +174,7 @@ export default {
 
             reply.status(200).send({ message: 'ok' });
         } catch (error) {
+            console.error(error);
             reply.status(500).send({ message: 'Internal Server Error', error });
         }
     },
@@ -172,7 +185,9 @@ export default {
             const message_id = req.params.id;
 
             const groupMessageRepo = getRepository(GroupMessage);
-            const message = await groupMessageRepo.findOne(message_id);
+            const message = await groupMessageRepo.findOne(message_id, {
+                relations: ['medias'],
+            });
 
             if (!message)
                 return reply
@@ -184,7 +199,10 @@ export default {
                     .status(401)
                     .send({ message: 'Você não pode deletar esta mensagem!' });
 
-            await groupMessageRepo.delete(message);
+            await Promise.all([
+                groupMessageRepo.delete(message.id),
+                ...message.medias.map(m => upload.remove(m.url)),
+            ]);
 
             reply.status(200).send({ message: 'ok' });
         } catch (error) {

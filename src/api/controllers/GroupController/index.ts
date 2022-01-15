@@ -1,7 +1,7 @@
 import { getRepository } from 'typeorm';
 import { upload } from '../../helpers';
 import { ServerReply, ServerRequest } from '../../interfaces/controller';
-import { Group, GroupUser } from '../../models';
+import { Group, GroupUser, User } from '../../models';
 
 export default {
     async show(req: ServerRequest, reply: ServerReply) {
@@ -36,11 +36,21 @@ export default {
             const { name, description, picture, members } = req.body;
 
             const groupRepository = getRepository(Group);
-
             const date = new Date();
+
+            const user = await getRepository(User).findOne(id, {
+                relations: ['contacts'],
+            });
+
+            if (!user)
+                return reply
+                    .status(404)
+                    .send({ message: 'Sua conta não foi encontrada!' });
+
+            // allows you to only put contacts as a member of a group
             const membersArr = (
                 Array.isArray(members) ? members : [members]
-            ).filter(m => m !== id);
+            ).filter(m => !!user.contacts.find(c => c.contact_user_id === m));
 
             const picture_url = picture
                 ? await upload.save(picture).then(p => p.Location)
@@ -132,7 +142,7 @@ export default {
 
             const id = req.user;
             const group_id = req.params.id;
-            const { picture } = req.body;
+            const { picture } = upload.parseBody(req.body);
 
             const groupRepository = getRepository(Group);
             const group = await groupRepository.findOne(group_id, {
@@ -194,27 +204,32 @@ export default {
                     .send({ message: 'Você não está no grupo!' });
 
             if (id === group.leader_id) {
-                // TEST
                 const oldestAdmin = group.users
-                    .filter(u => u.role === 0)
-                    .reduce((prv, crr) =>
-                        prv.role_since > crr.role_since ? crr : prv,
-                    );
+                    .filter(u => u.role === 0 && u.user_id !== id)
+                    .sort((a, b) => (a.role_since > b.role_since ? 1 : -1))[0];
 
                 if (oldestAdmin) {
                     await groupRepository.update(group_id, {
                         leader_id: oldestAdmin.user_id,
                     });
                 } else {
-                    const oldestUser = group.users.reduce((prv, crr) =>
-                        prv.member_since > crr.member_since ? crr : prv,
-                    );
+                    const oldestUser = group.users
+                        .filter(u => u.user_id !== id)
+                        .sort((a, b) =>
+                            a.role_since > b.role_since ? 1 : -1,
+                        )[0];
 
-                    oldestUser
-                        ? await groupRepository.update(group_id, {
-                              leader_id: oldestUser.user_id,
-                          })
-                        : await groupRepository.delete(group_id);
+                    if (oldestUser) {
+                        await Promise.all([
+                            groupRepository.update(group_id, {
+                                leader_id: oldestUser.user_id,
+                            }),
+                            groupUserRepository.update(oldestUser.id, {
+                                role: 0,
+                                role_since: new Date(),
+                            }),
+                        ]);
+                    } else await groupRepository.delete(group_id);
                 }
             }
 
@@ -222,6 +237,7 @@ export default {
 
             reply.status(200).send({ message: 'ok' });
         } catch (error) {
+            console.error(error);
             reply.status(500).send({ message: 'Internal Server Error', error });
         }
     },
