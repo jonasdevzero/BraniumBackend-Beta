@@ -35,7 +35,7 @@ export default class GroupMessage extends BaseEntity {
     @ManyToOne(_ => User, user => user.group_messages_sent, {
         cascade: ['update', 'remove'],
     })
-    @JoinColumn({ name: 'group_id' })
+    @JoinColumn({ name: 'sender_id' })
     sender: User;
 
     @OneToMany(_ => GroupMediaMessage, media => media.message)

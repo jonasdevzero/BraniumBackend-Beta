@@ -34,7 +34,7 @@ export default {
                 take: limit,
                 skip,
                 order: { created_at: 'DESC' },
-                relations: ['medias'],
+                relations: ['medias', 'sender'],
             });
 
             reply.status(200).send({ messages });
