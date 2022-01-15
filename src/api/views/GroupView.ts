@@ -8,7 +8,7 @@ export default function serialize(
     done: DoneFuncWithErrOrRes,
 ) {
     const { group } = payload;
-    group ? done() : done();
+    group ? done(null, { group: renderGroup(group) }) : done(null, payload);
 }
 
 export function renderGroup(group: Group | Group[]) {
