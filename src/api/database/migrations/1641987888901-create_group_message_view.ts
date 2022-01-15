@@ -43,6 +43,8 @@ export class createGroupMessageView1641987888901 implements MigrationInterface {
                         columnNames: ['message_id'],
                         referencedTableName: 'group_message',
                         referencedColumnNames: ['id'],
+                        onUpdate: 'CASCADE',
+                        onDelete: 'CASCADE',
                     },
                     {
                         name: 'MessageViewer',
