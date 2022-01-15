@@ -161,7 +161,7 @@ export default {
                 receiverMessage.medias = receiverMediasSaved;
             }
 
-            socketEmit.contact.message(message, receiverMessage, to);
+            socketEmit.contact.messages.create(message, receiverMessage, to);
             reply.status(201).send({ message, to });
         } catch (error) {
             reply.status(500).send({ message: 'Internal Server Error', error });

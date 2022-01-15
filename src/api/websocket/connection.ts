@@ -19,14 +19,14 @@ export async function socketConnection(
             return socket.disconnect();
         }
 
-        const token = jwt.split(" ")[1];
+        const token = jwt.split(' ')[1];
 
         const id: string = await new Promise((resolve, reject) => {
             fastify.jwt.verify(token, (err: any, decoded: any) => {
                 return !err ? resolve(decoded.id) : reject(err);
             });
         });
-        
+
         const userRepository = getRepository(User);
         const user = await userRepository.findOne(id, {
             relations: ['contacts'],
