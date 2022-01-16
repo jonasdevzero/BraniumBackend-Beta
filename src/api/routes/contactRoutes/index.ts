@@ -1,5 +1,5 @@
 import { FastifyPluginOptions, FastifyInstance } from 'fastify';
-import authHook from '../../middlewares/auth';
+import { auth } from '../../middlewares';
 import ContactController from '../../controllers/ContactController';
 import contactSchema from '../../schemas/contactSchema';
 import serializeContact from '../../views/ContactView';
@@ -10,7 +10,7 @@ export default function contactRoutes(
     _opts: FastifyPluginOptions,
     done: (err?: Error) => void,
 ) {
-    fastify.addHook('preValidation', authHook);
+    fastify.addHook('preValidation', auth);
 
     fastify.get(
         '/:id',

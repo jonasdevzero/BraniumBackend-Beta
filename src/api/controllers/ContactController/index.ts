@@ -1,6 +1,7 @@
 import { getRepository } from 'typeorm';
 import { ServerRequest, ServerReply } from '../../interfaces/controller';
-import { Contact, User, ContactInvitation } from '../../models';
+import { Contact } from '../../models';
+import ContactService from '../../services/ContactService';
 import socketEmit from '../../websocket/emit';
 
 export default {
@@ -21,8 +22,8 @@ export default {
                     .send({ message: 'Contato não encontrado!' });
 
             reply.status(200).send({ contact });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 
@@ -31,81 +32,12 @@ export default {
             const id = req.user.toString();
             const contact_id = req.params.id;
 
-            if (id == contact_id)
-                return reply
-                    .status(400)
-                    .send({ message: 'Você não pode convidar a si mesmo' });
-
-            const userRepository = getRepository(User);
-            const invitationRepository = getRepository(ContactInvitation);
-
-            const [
-                user,
-                existsUser,
-                invitationAlreadySent,
-                invitationAlreadyReceived,
-            ] = await Promise.all([
-                userRepository.findOne({
-                    where: { id },
-                    relations: ['contacts'],
-                }),
-                userRepository.findOne({
-                    where: { id: contact_id },
-                    select: ['id'],
-                }),
-                invitationRepository.findOne({
-                    where: {
-                        sender_id: id,
-                        receiver_id: contact_id,
-                        pending: true,
-                    },
-                }),
-                invitationRepository.findOne({
-                    where: {
-                        sender_id: contact_id,
-                        receiver_id: id,
-                        pending: true,
-                    },
-                }),
-            ]);
-
-            if (!user)
-                return reply
-                    .status(500)
-                    .send({ message: 'Sua conta não foi encontrada!' });
-
-            if (!existsUser)
-                return reply
-                    .status(400)
-                    .send({ message: 'Usuário não encontrado!' });
-
-            if (user.contacts.find(c => c.contact_user_id === contact_id))
-                return reply
-                    .status(400)
-                    .send({ message: 'Você já possui este contato' });
-
-            if (invitationAlreadySent)
-                return reply
-                    .status(400)
-                    .send({
-                        message: 'Você já enviou um convite para este usuário',
-                    });
-
-            if (invitationAlreadyReceived)
-                return reply
-                    .status(400)
-                    .send({
-                        message: 'Este usuário já lhe enviou um convite!',
-                    });
-
-            const invite = await invitationRepository
-                .create({ sender: user, receiver_id: contact_id })
-                .save();
+            const invite = await ContactService.inviteUser(id, contact_id);
 
             socketEmit.contact.invite(invite);
             reply.status(201).send({ message: 'ok' });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 
@@ -114,92 +46,32 @@ export default {
             const id = req.user.toString();
             const invitation_id = req.params.invite;
 
-            const contactRepository = getRepository(Contact);
-            const invitationsRepository = getRepository(ContactInvitation);
-
-            const invitation = await invitationsRepository.findOne(
+            const [contact, selfContact] = await ContactService.acceptInvite(
+                id,
                 invitation_id,
-                { relations: ['user', 'sender'] },
             );
 
-            if (!invitation)
-                return reply
-                    .status(404)
-                    .send({ message: 'Convite não encontrado!' });
-
-            const {
-                sender_id,
-                receiver_id,
-                pending,
-                sender,
-                user: receiver,
-            } = invitation;
-
-            if (receiver_id !== id)
-                return reply
-                    .status(400)
-                    .send({ message: 'Este convite é para outro usuário!' });
-
-            if (!pending)
-                return reply.status(400).send({ message: 'Convite inválido' });
-
-            const [contact, contactAccept] = await Promise.all([
-                contactRepository
-                    .create({
-                        user_id: id,
-                        contact_user_id: sender_id,
-                        contact: sender,
-                    })
-                    .save(),
-                contactRepository
-                    .create({
-                        user_id: sender_id,
-                        contact_user_id: id,
-                        contact: receiver,
-                    })
-                    .save(),
-                invitationsRepository.update(invitation, { pending: false }),
-            ]);
-
-            socketEmit.contact.acceptInvite(contact, contactAccept);
+            socketEmit.contact.acceptInvite(contact, selfContact);
             reply.status(201).send({ contact });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 
     async refuseInvite(req: ServerRequest, reply: ServerReply) {
         try {
-            const id = req.user;
+            const id = req.user as string;
             const invitation_id = req.params.invite;
 
-            const invitationsRepository = getRepository(ContactInvitation);
-            const invitation = await invitationsRepository.findOne({
-                where: { id: invitation_id, receiver_id: id },
-                relations: ['user'],
-            });
-
-            if (!invitation)
-                return reply
-                    .status(404)
-                    .send({ message: 'Convite não encontrado!' });
-
-            const { receiver_id, pending } = invitation;
-
-            if (receiver_id !== id)
-                return reply
-                    .status(400)
-                    .send({ message: 'Este convite é para outro usuário!' });
-
-            if (!pending)
-                return reply.status(400).send({ message: 'Convite inválido!' });
-
-            await invitationsRepository.update(invitation, { pending: false });
+            const invitation = await ContactService.refuseInvite(
+                id,
+                invitation_id,
+            );
 
             socketEmit.contact.refuseInvite(invitation);
             reply.status(200).send({ message: 'ok' });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 
@@ -208,38 +80,15 @@ export default {
             const id = req.user.toString();
             const contact_id = req.params.id;
 
-            const contactRepository = getRepository(Contact);
+            const [contact, selfContact] = await ContactService.toggleBlock(
+                id,
+                contact_id,
+            );
 
-            // "myContact" is my contact that I have with the other user. "contact" is the contact that the other user has with me.
-            const [myContact, contact] = await Promise.all([
-                contactRepository.findOne({
-                    where: { user_id: id, contact_user_id: contact_id },
-                    relations: ['user'],
-                }),
-                contactRepository.findOne({
-                    user_id: contact_id,
-                    contact_user_id: id,
-                }),
-            ]);
-
-            if (!myContact || !contact)
-                return reply
-                    .status(400)
-                    .send({ message: 'Contato não encontrado!' });
-
-            await Promise.all([
-                contactRepository.update(myContact, {
-                    you_blocked: !myContact.you_blocked,
-                }),
-                contactRepository.update(contact, {
-                    blocked: !contact.blocked,
-                }),
-            ]);
-
-            socketEmit.contact.block(myContact, contact);
-            reply.status(200).send({ you_blocked: !myContact.you_blocked });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+            socketEmit.contact.block(contact, selfContact);
+            reply.status(200).send({ you_blocked: !contact.you_blocked });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 };
