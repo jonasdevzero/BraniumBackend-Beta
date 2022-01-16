@@ -15,7 +15,7 @@ describe('user routes tests', () => {
             url: '/user',
         });
 
-        expect(JSON.parse(res.payload)).toEqual({ user: [] });
+        expect(JSON.parse(res.payload)).toEqual({ users: [] });
     });
 
     test('preRegistration route test', async () => {
@@ -66,7 +66,7 @@ describe('user routes tests', () => {
             method: 'POST',
             url: '/user/login',
             payload: {
-                username: 'devtest',
+                login: 'devtest',
                 password: '123456',
             },
         });
@@ -249,8 +249,8 @@ describe('user routes tests', () => {
             },
         });
 
-        const { user } = JSON.parse(res2.payload);
-        const [{ id, username }] = user;
+        const { users } = JSON.parse(res2.payload);
+        const [{ id, username }] = users;
 
         expect({ id, username }).toEqual({
             id: user_id,
