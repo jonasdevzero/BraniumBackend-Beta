@@ -224,6 +224,42 @@ export default {
         });
     },
 
+    /**
+     * Create a reset token to update the `password`
+     * @returns Returns the `reset_token`
+     */
+    createResetToken(email: string): Promise<string> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const userRepository = getRepository(User);
+                const user = await userRepository.findOne({
+                    where: { email },
+                    withDeleted: true,
+                });
+
+                if (!user)
+                    return reject({
+                        status: 404,
+                        message: 'Conta não encontrada!',
+                    });
+
+                const reset_token = crypt.generateHash();
+                const expire_token = new Date();
+                expire_token.setHours(new Date().getHours() + 1);
+
+                const { id } = user;
+                await userRepository.update(id, { reset_token, expire_token });
+
+                resolve(reset_token);
+            } catch (error) {}
+        });
+    },
+
+    /**
+     * Reset the password of an account
+     * @param data
+     * @param data.reset_token - The token to reset the password
+     */
     resetPassword(data: {
         reset_token: string;
         password: string;
@@ -308,6 +344,9 @@ export default {
         });
     },
 
+    /**
+     * Updates only `email` validating the `password`
+     */
     updateEmail(
         id: string,
         data: { email: string; password: string },
@@ -347,6 +386,11 @@ export default {
         });
     },
 
+    /**
+     * Updates the user `picture`
+     * @param id User ID
+     * @returns Returns the picture url
+     */
     updatePicture(id: string, picture: any): Promise<string | undefined> {
         return new Promise(async (resolve, reject) => {
             try {

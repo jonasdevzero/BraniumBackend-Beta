@@ -1,7 +1,7 @@
 import { getRepository } from 'typeorm';
 import { ServerRequest, ServerReply } from '../interfaces/controller';
 import { User, ContactInvitation, PreRegistration } from '../models';
-import { crypt, upload, mailer } from '../helpers';
+import { upload, mailer } from '../helpers';
 import { constants } from '../../config/constants';
 import UserService from '../services/UserService';
 
@@ -34,8 +34,8 @@ export default {
             const users = await UserService.search(id, username);
 
             reply.status(200).send({ users });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 
@@ -74,9 +74,8 @@ export default {
             });
 
             reply.status(201).send({ message: 'Verifique seu e-mail!' });
-        } catch (err: any) {
-            const { status, message, error } = err;
-            reply.status(status).send({ message, error });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 
@@ -92,9 +91,8 @@ export default {
             );
 
             reply.status(201).send({ token });
-        } catch (err: any) {
-            const { status, message, error } = err;
-            reply.status(status).send({ message, error });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 
@@ -110,9 +108,8 @@ export default {
             );
 
             reply.status(200).send({ token });
-        } catch (err: any) {
-            const { status, message, error } = err;
-            reply.status(status).send({ message, error });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 
@@ -158,8 +155,8 @@ export default {
             await UserService.update(id, req.body);
 
             reply.status(200).send(req.body);
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 
@@ -171,9 +168,8 @@ export default {
             await UserService.updateEmail(id, req.body);
 
             reply.status(200).send({ email });
-        } catch (err: any) {
-            const { status, message, error } = err;
-            reply.status(status).send({ message, error });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 
@@ -185,8 +181,8 @@ export default {
             const location = await UserService.updatePicture(id, picture);
 
             reply.status(200).send({ location });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 
@@ -194,23 +190,7 @@ export default {
         try {
             const { email } = req.body;
 
-            const userRepository = getRepository(User);
-            const user = await userRepository.findOne({
-                where: { email },
-                withDeleted: true,
-            });
-
-            if (!user)
-                return reply
-                    .status(400)
-                    .send({ message: 'Conta não encontrada!' });
-
-            const reset_token = crypt.generateHash();
-            const expire_token = new Date();
-            expire_token.setHours(new Date().getHours() + 1);
-
-            const { id } = user;
-            await userRepository.update(id, { reset_token, expire_token });
+            const reset_token = await UserService.createResetToken(email);
 
             mailer.sendTemplatedEmail({
                 to: email,
@@ -222,8 +202,8 @@ export default {
             });
 
             reply.status(200).send({ message: 'Verifique seu email' });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 
@@ -232,9 +212,8 @@ export default {
             await UserService.resetPassword(req.body);
 
             reply.status(200).send({ message: 'Senha alterada com sucesso!' });
-        } catch (err: any) {
-            const { status, message, error } = err;
-            reply.status(status).send({ message, error });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 
@@ -248,9 +227,8 @@ export default {
             await getRepository(User).softDelete(id);
 
             reply.status(200).send({ message: 'ok' });
-        } catch (err: any) {
-            const { status, message, error } = err;
-            reply.status(status).send({ message, error });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 
@@ -258,6 +236,7 @@ export default {
         try {
             const { email, password } = req.body;
 
+            // Validates the password of an deleted account
             const userId = await UserService.validatePassword(
                 email,
                 password,
@@ -267,9 +246,8 @@ export default {
             await getRepository(User).restore(userId);
 
             reply.status(200).send({ message: 'ok' });
-        } catch (err: any) {
-            const { status, message, error } = err;
-            reply.status(status).send({ message, error });
+        } catch (error: any) {
+            reply.status(error.status).send(error);
         }
     },
 };
