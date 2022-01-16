@@ -224,11 +224,11 @@ export default {
     update: {
         body: yup
             .object({
-                email: yup
+                name: yup.string().required('Preencha o campo "nome"'),
+                username: yup
                     .string()
-                    .email('Email mal formatado')
-                    .required('Preencha o campo "email"'),
-                password: yup.string().required('Preencha o campo "senha"'),
+                    .min(4, 'O "username" deve ter no mínimo 4 caracteres!')
+                    .required(),
             })
             .required(),
         response: {

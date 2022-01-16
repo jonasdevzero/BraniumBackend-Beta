@@ -2,7 +2,7 @@ import { FastifyPluginOptions, FastifyInstance } from 'fastify';
 import authHook from '../../middlewares/auth';
 import ContactController from '../../controllers/ContactController';
 import contactSchema from '../../schemas/contactSchema';
-import ContactView from '../../views/ContactView';
+import serializeContact from '../../views/ContactView';
 import messagesRoutes from './messagesRoutes';
 
 export default function contactRoutes(
@@ -16,7 +16,7 @@ export default function contactRoutes(
         '/:id',
         {
             schema: contactSchema.show,
-            preSerialization: ContactView,
+            preSerialization: serializeContact,
         },
         ContactController.show,
     );
@@ -33,7 +33,7 @@ export default function contactRoutes(
         '/invite/accept/:invite',
         {
             schema: contactSchema.acceptInvite,
-            preSerialization: ContactView,
+            preSerialization: serializeContact,
         },
         ContactController.acceptInvite,
     );

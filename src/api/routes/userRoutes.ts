@@ -58,6 +58,8 @@ export default function userRoutes(
         '/login',
         {
             schema: userSchema.login,
+            validatorCompiler,
+            errorHandler,
         },
         userController.login,
     );
@@ -115,6 +117,8 @@ export default function userRoutes(
         '/reset_password',
         {
             schema: userSchema.resetPassword,
+            validatorCompiler,
+            errorHandler,
         },
         userController.resetPassword,
     );
