@@ -3,8 +3,9 @@ import { ServerRequest, ServerReply } from '../interfaces/controller';
 import { User, ContactInvitation, PreRegistration } from '../models';
 import { userUtil, upload } from '../helpers';
 import * as yup from 'yup';
-import * as mailer from '../helpers/mailer';
+import mailer from '../helpers/mailer';
 import { constants } from '../../config/constants';
+import UserService from '../services/UserService';
 
 export default {
     async index(req: ServerRequest, reply: ServerReply) {
@@ -15,13 +16,13 @@ export default {
             page = (page > 0 ? page : 0) * take;
 
             const userRepository = getRepository(User);
-            const user = await userRepository.find({
+            const users = await userRepository.find({
                 take,
                 skip: page,
                 order: { created_at: 'DESC' },
             });
 
-            reply.status(200).send({ user });
+            reply.status(200).send({ users });
         } catch (error) {
             reply.status(500).send({ message: 'Internal Server Error', error });
         }
@@ -32,42 +33,9 @@ export default {
             const id = req.user.toString();
             const { username } = req.query;
 
-            const userRepository = getRepository(User);
-            const [user, users] = await Promise.all([
-                userRepository.findOne(id, {
-                    relations: ['contacts', 'invitations_sent'],
-                    withDeleted: true,
-                }),
-                userRepository.find({
-                    where: { username: ILike(`%${username}%`) },
-                    take: 20,
-                    withDeleted: true,
-                }),
-            ]);
+            const users = await UserService.search(id, username);
 
-            if (!user)
-                return reply
-                    .status(500)
-                    .send({ message: 'Conta não encontrada!' });
-
-            if (user.deleted_at)
-                return reply
-                    .status(400)
-                    .send({ message: 'Sua conta foi deletada! Restaure-a!' });
-
-            const existentContacts = [user.id];
-            user.contacts.forEach(c =>
-                existentContacts.push(c.contact_user_id),
-            );
-            user.invitations_sent.forEach(i =>
-                i.pending ? existentContacts.push(i.receiver_id) : null,
-            );
-
-            const filteredUsers = users.filter(
-                u => !existentContacts.includes(u.id) && !u.deleted_at,
-            );
-
-            reply.status(200).send({ user: filteredUsers });
+            reply.status(200).send({ users });
         } catch (error) {
             reply.status(500).send({ message: 'Internal Server Error', error });
         }
@@ -77,58 +45,23 @@ export default {
         try {
             const { name, email } = req.body;
 
-            const schema = yup.object().shape({
-                email: yup
-                    .string()
-                    .lowercase()
-                    .email('Formatação de email incorreta')
-                    .required("Preencha o campo 'email'"),
-                name: yup.string().required("Preencha o campo 'nome'"),
+            // pre registration ID
+            const id = await UserService.preRegister(req.body);
+
+            mailer.sendTemplatedEmail({
+                to: email,
+                subject: 'Completar Cadastro',
+                templateName: 'completeRegistration',
+                data: {
+                    name,
+                    link: constants.client.routes.completeRegistration(id),
+                },
             });
-
-            let validationError: any;
-            const userRepository = getRepository(User);
-            const preRegistrationRepo = getRepository(PreRegistration);
-
-            const [existsEmail, existsPreRegistration] = await Promise.all([
-                userRepository.findOne({ where: { email }, withDeleted: true }),
-                preRegistrationRepo.findOne({ where: { email } }),
-                schema.validate(req.body).catch(err => (validationError = err)),
-            ]);
-
-            if (validationError)
-                return reply
-                    .status(400)
-                    .send({ message: validationError.errors[0] });
-
-            if (existsEmail)
-                return reply
-                    .status(400)
-                    .send({ message: 'Email já registrado' });
-
-            if (existsPreRegistration)
-                return reply
-                    .status(400)
-                    .send({ message: 'Email já cadastrado' });
-
-            const preRegistration = await preRegistrationRepo
-                .create({ name, email })
-                .save();
-
-            const link = constants.client.routes.completeRegistration(
-                preRegistration.id,
-            );
-            const template = await mailer.loadTemplate('completeRegistration', {
-                link,
-                name,
-            });
-            mailer
-                .sendMail(email, 'Completar cadastro!', template)
-                .catch(() => {});
 
             reply.status(201).send({ message: 'Verifique seu e-mail!' });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+        } catch (err: any) {
+            const { status, message, error } = err;
+            reply.status(status).send({ message, error });
         }
     },
 
@@ -152,113 +85,37 @@ export default {
 
     async registration(req: ServerRequest, reply: ServerReply) {
         try {
-            const { username, password, confirm_password } = req.body;
             const id = req.params.id;
 
-            if (password !== confirm_password)
-                return reply
-                    .status(400)
-                    .send({ message: 'Senhas diferentes!' });
+            const userId = await UserService.register(id, req.body);
 
-            let validationError: any;
-            const schema = yup.object().shape({
-                confirm_password: yup
-                    .string()
-                    .min(6)
-                    .required("Preencha o campo 'confirmar senha'"),
-                password: yup
-                    .string()
-                    .min(6, 'A senha deve ter no mínimo 6 caracteres')
-                    .required("Preencha o campo 'senha'"),
-                username: yup
-                    .string()
-                    .lowercase()
-                    .min(4, 'O username deve ter no mínimo 4 caracteres')
-                    .required("Preencha o campo 'username'"),
-            });
-
-            const preRegistrationRepo = getRepository(PreRegistration);
-            const userRepository = getRepository(User);
-
-            const [preRegistration, existsUsername] = await Promise.all([
-                preRegistrationRepo.findOne(id),
-                userRepository.findOne({ where: { username } }),
-                schema.validate(req.body).catch(err => (validationError = err)),
-            ]);
-
-            if (validationError)
-                return reply
-                    .status(400)
-                    .send({ message: validationError.errors[0] });
-
-            if (!preRegistration)
-                return reply
-                    .status(404)
-                    .send({ message: 'Cadastro não encontrado!' });
-
-            if (!preRegistration.pending)
-                return reply
-                    .status(400)
-                    .send({ message: 'Cadastro já realizado!' });
-
-            if (existsUsername)
-                return reply.status(400).send({ message: 'Username em uso!' });
-
-            const { name, email } = preRegistration;
-
-            const [user] = await Promise.all([
-                userRepository
-                    .create({ name, email, username, password })
-                    .save(),
-                preRegistrationRepo.update(preRegistration, { pending: false }),
-            ]);
             const token = await reply.jwtSign(
-                { id: user.id },
-                { expiresIn: 86400000 },
+                { id: userId },
+                { expiresIn: '24h' },
             );
 
             reply.status(201).send({ token });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+        } catch (err: any) {
+            const { status, message, error } = err;
+            reply.status(status).send({ message, error });
         }
     },
 
     async login(req: ServerRequest, reply: ServerReply) {
         try {
-            const { username, password } = req.body;
+            const { login, password } = req.body;
 
-            const userRepository = getRepository(User);
-
-            const target = /^[a-z0-9.]+@[a-z0-9]+\.[a-z]+(\.[a-z]+)?$/i.test(
-                username,
-            )
-                ? 'email'
-                : 'username';
-            const user = await userRepository.findOne({
-                where: { [target]: username },
-                withDeleted: true,
-            });
-
-            if (!user)
-                return reply
-                    .status(400)
-                    .send({ message: `'${target}' incorreto` });
-
-            if (user.deleted_at)
-                return reply
-                    .status(400)
-                    .send({ message: 'Sua conta foi deletada! Restaure-a!' });
-
-            if (!userUtil.comparePasswords(password, user.password))
-                return reply.status(401).send({ message: 'Senha Incorreta' });
+            const userId = await UserService.validatePassword(login, password);
 
             const token = await reply.jwtSign(
-                { id: user.id },
-                { expiresIn: 86400000 },
+                { id: userId },
+                { expiresIn: '24h' },
             );
+
             reply.status(200).send({ token });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+        } catch (err: any) {
+            const { status, message, error } = err;
+            reply.status(status).send({ message, error });
         }
     },
 
@@ -305,27 +162,10 @@ export default {
 
             const userRepository = getRepository(User);
 
-            const scheme = yup.object({
-                name: yup.string().required("Preencha o campo 'nome'"),
-                username: yup
-                    .string()
-                    .min(4, 'O username deve ter no mínimo 4 caracteres')
-                    .required("Preencha o campo 'username'"),
-            });
-            let validationError: any = undefined;
-
             const [user, existsUsername] = await Promise.all([
                 userRepository.findOne(id),
                 userRepository.findOne({ where: { username, id: Not(id) } }),
-                scheme
-                    .validate(req.body)
-                    .catch(error => (validationError = error)),
             ]);
-
-            if (validationError)
-                return reply
-                    .status(400)
-                    .send({ message: validationError.errors[0] });
 
             if (!user)
                 return reply
@@ -349,28 +189,11 @@ export default {
             const id = req.user.toString();
             const { email, password } = req.body;
 
-            const schema = yup.object({
-                email: yup
-                    .string()
-                    .email('Email mal formatado')
-                    .required("Preencha o campo 'email'"),
-                password: yup.string().required("Preencha o campo  'senha'"),
-            });
-            let validationError: any = undefined;
-
             const userRepository = getRepository(User);
             const [user, existsEmail] = await Promise.all([
                 userRepository.findOne(id),
                 userRepository.findOne({ where: { id: Not(id), email } }),
-                schema
-                    .validate(req.body)
-                    .catch(error => (validationError = error)),
             ]);
-
-            if (validationError)
-                return reply
-                    .status(400)
-                    .send({ message: validationError.errors[0] });
 
             if (!user)
                 return reply
@@ -386,8 +209,9 @@ export default {
             await userRepository.update(id, { email });
 
             reply.status(200).send({ email });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+        } catch (err: any) {
+            const { status, message, error } = err;
+            reply.status(status).send({ message, error });
         }
     },
 
@@ -459,13 +283,14 @@ export default {
             const { id } = user;
             await userRepository.update(id, { reset_token, expire_token });
 
-            const link = constants.client.routes.forgotPassword(reset_token);
-            const template = await mailer.loadTemplate('forgotPassword', {
-                link,
+            mailer.sendTemplatedEmail({
+                to: email,
+                subject: 'Resetar senha',
+                templateName: 'forgotPassword',
+                data: {
+                    link: constants.client.routes.forgotPassword(reset_token),
+                },
             });
-            mailer
-                .sendMail(email, 'Resetar sua senha', template)
-                .catch(() => {});
 
             reply.status(200).send({ message: 'Verifique seu email' });
         } catch (error) {
@@ -475,54 +300,12 @@ export default {
 
     async resetPassword(req: ServerRequest, reply: ServerReply) {
         try {
-            const { password, confirm_password, reset_token } = req.body;
+            await UserService.resetPassword(req.body);
 
-            if (password !== confirm_password)
-                return reply.status(400).send({ message: 'Senhas diferentes' });
-
-            const schema = yup.object({
-                reset_token: yup
-                    .string()
-                    .required('Token para resetar está faltando'),
-                password: yup
-                    .string()
-                    .min(6, 'A senha deve ter no mínimo 6 caracteres')
-                    .required('Preencha o campo senha'),
-            });
-
-            let validationError: any = undefined;
-            schema.validate(req.body).catch(err => (validationError = err));
-
-            if (validationError)
-                return reply
-                    .status(400)
-                    .send({ message: validationError.errors[0] });
-
-            const userRepository = getRepository(User);
-            const user = await userRepository.findOne({
-                where: { reset_token },
-                withDeleted: true,
-            });
-
-            if (!user)
-                return reply
-                    .status(404)
-                    .send({ message: 'Usuário não encontrado!' });
-
-            const now = new Date();
-            if (now > user.expire_token)
-                return reply
-                    .status(400)
-                    .send({ message: 'Token expirado, peça outro!' });
-
-            await userRepository.update(user.id, {
-                password: userUtil.encryptPassword(password),
-                reset_token: undefined,
-                expire_token: undefined,
-            });
             reply.status(200).send({ message: 'Senha alterada com sucesso!' });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+        } catch (err: any) {
+            const { status, message, error } = err;
+            reply.status(status).send({ message, error });
         }
     },
 
