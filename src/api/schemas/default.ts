@@ -1,15 +1,14 @@
-
 export const defaultMessage = {
-    type: "object",
+    type: 'object',
     properties: {
-        message: { type: "string" }
-    }
-}
+        message: { type: 'string' },
+    },
+};
 
 export const defaultError = {
-    type: "object",
+    type: 'object',
     properties: {
-        message: { type: "string" },
-        error: { type: "string" }
-    }
-}
+        message: { type: 'string' },
+        error: { type: 'string' },
+    },
+};

@@ -29,9 +29,9 @@ export default function userRoutes(
     fastify.get(
         '/pre_registration/:id',
         {
-            schema: userSchema.showPreRegistration,
+            schema: userSchema.getPreRegistration,
         },
-        userController.showPreRegistration,
+        userController.getPreRegistration,
     );
 
     fastify.post(

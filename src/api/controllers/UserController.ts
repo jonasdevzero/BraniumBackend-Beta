@@ -1,9 +1,7 @@
-import { getRepository, ILike, Not } from 'typeorm';
+import { getRepository } from 'typeorm';
 import { ServerRequest, ServerReply } from '../interfaces/controller';
 import { User, ContactInvitation, PreRegistration } from '../models';
-import { userUtil, upload } from '../helpers';
-import * as yup from 'yup';
-import mailer from '../helpers/mailer';
+import { crypt, upload, mailer } from '../helpers';
 import { constants } from '../../config/constants';
 import UserService from '../services/UserService';
 
@@ -41,6 +39,23 @@ export default {
         }
     },
 
+    async getPreRegistration(req: ServerRequest, reply: ServerReply) {
+        try {
+            const id = req.params.id;
+
+            const pR = await getRepository(PreRegistration).findOne(id);
+
+            if (!pR)
+                return reply
+                    .status(404)
+                    .send({ message: 'Cadastro não encontrado!' });
+
+            reply.status(200).send({ preRegistration: pR });
+        } catch (error) {
+            reply.status(500).send({ message: 'Internal Server Error', error });
+        }
+    },
+
     async preRegistration(req: ServerRequest, reply: ServerReply) {
         try {
             const { name, email } = req.body;
@@ -62,24 +77,6 @@ export default {
         } catch (err: any) {
             const { status, message, error } = err;
             reply.status(status).send({ message, error });
-        }
-    },
-
-    async showPreRegistration(req: ServerRequest, reply: ServerReply) {
-        try {
-            const id = req.params.id;
-
-            const preRegistrationRepo = getRepository(PreRegistration);
-            const preRegistration = await preRegistrationRepo.findOne(id);
-
-            if (!preRegistration)
-                return reply
-                    .status(404)
-                    .send({ message: 'Cadastro não encontrado!' });
-
-            reply.status(200).send({ preRegistration });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
         }
     },
 
@@ -150,7 +147,6 @@ export default {
 
             reply.status(200).send({ user });
         } catch (error) {
-            req.log.error(error);
             reply.status(500).send({ message: 'Internal Server Error', error });
         }
     },
@@ -158,27 +154,10 @@ export default {
     async update(req: ServerRequest, reply: ServerReply) {
         try {
             const id = req.user.toString();
-            const { name, username } = req.body;
 
-            const userRepository = getRepository(User);
+            await UserService.update(id, req.body);
 
-            const [user, existsUsername] = await Promise.all([
-                userRepository.findOne(id),
-                userRepository.findOne({ where: { username, id: Not(id) } }),
-            ]);
-
-            if (!user)
-                return reply
-                    .status(500)
-                    .send({ message: 'Usuário não encontrado!' });
-
-            if (existsUsername)
-                return reply.status(400).send({ message: 'Username em uso!' });
-
-            await userRepository.update(id, { name, username });
-            reply.status(200).send({ name, username });
-
-            // Implemet Socket Event Bellow
+            reply.status(200).send(req.body);
         } catch (error) {
             reply.status(500).send({ message: 'Internal Server Error', error });
         }
@@ -187,26 +166,9 @@ export default {
     async email(req: ServerRequest, reply: ServerReply) {
         try {
             const id = req.user.toString();
-            const { email, password } = req.body;
+            const { email } = req.body;
 
-            const userRepository = getRepository(User);
-            const [user, existsEmail] = await Promise.all([
-                userRepository.findOne(id),
-                userRepository.findOne({ where: { id: Not(id), email } }),
-            ]);
-
-            if (!user)
-                return reply
-                    .status(500)
-                    .send({ message: 'Usuário não encontrado!' });
-
-            if (existsEmail)
-                return reply.status(400).send({ message: 'Email em uso!' });
-
-            if (!userUtil.comparePasswords(password, user.password))
-                return reply.status(401).send({ message: 'Senha incorreta!' });
-
-            await userRepository.update(id, { email });
+            await UserService.updateEmail(id, req.body);
 
             reply.status(200).send({ email });
         } catch (err: any) {
@@ -220,42 +182,9 @@ export default {
             const id = req.user.toString();
             const { picture } = upload.parseBody(req.body);
 
-            const userRepository = getRepository(User);
-            const user = await userRepository.findOne(id);
-
-            if (!user)
-                return reply
-                    .status(500)
-                    .send({ message: 'Error inesperado! Tente novamente' });
-
-            let location = null;
-            if (picture) {
-                const [{ Location }] = await Promise.all([
-                    upload.save(picture),
-                    user.picture ? upload.remove(user.picture) : null,
-                ]).catch(error =>
-                    reply.status(500).send({
-                        message: 'Não foi possível atualizar a imagem!',
-                        error,
-                    }),
-                );
-
-                location = Location;
-                await userRepository.update(id, { picture: Location });
-            } else if (user.picture) {
-                await Promise.all([
-                    upload.remove(user.picture),
-                    userRepository.update(id, { picture: undefined }),
-                ]).catch(() =>
-                    reply.status(500).send({
-                        message: 'Não foi possível remover a imagem!',
-                    }),
-                );
-            }
+            const location = await UserService.updatePicture(id, picture);
 
             reply.status(200).send({ location });
-
-            // Implemet Socket Event Bellow
         } catch (error) {
             reply.status(500).send({ message: 'Internal Server Error', error });
         }
@@ -276,7 +205,7 @@ export default {
                     .status(400)
                     .send({ message: 'Conta não encontrada!' });
 
-            const reset_token = userUtil.generateHash();
+            const reset_token = crypt.generateHash();
             const expire_token = new Date();
             expire_token.setHours(new Date().getHours() + 1);
 
@@ -314,29 +243,14 @@ export default {
             const id = req.user.toString();
             const { password } = req.body;
 
-            const userRepository = getRepository(User);
-            const user = await userRepository.findOne(id, {
-                withDeleted: true,
-            });
+            await UserService.validatePassword(id, password);
 
-            if (!user)
-                return reply
-                    .status(500)
-                    .send({ message: 'Usuário não encontrado!' });
-
-            if (user.deleted_at)
-                return reply
-                    .status(400)
-                    .send({ message: 'Conta já deletada!' });
-
-            if (!userUtil.comparePasswords(password, user.password))
-                return reply.status(401).send({ message: 'Senha Incorreta' });
-
-            await userRepository.softDelete(user);
+            await getRepository(User).softDelete(id);
 
             reply.status(200).send({ message: 'ok' });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+        } catch (err: any) {
+            const { status, message, error } = err;
+            reply.status(status).send({ message, error });
         }
     },
 
@@ -344,29 +258,18 @@ export default {
         try {
             const { email, password } = req.body;
 
-            const userRepository = getRepository(User);
-            const user = await userRepository.findOne({
-                where: { email },
-                withDeleted: true,
-            });
+            const userId = await UserService.validatePassword(
+                email,
+                password,
+                true,
+            );
 
-            if (!user)
-                return reply
-                    .status(404)
-                    .send({ message: 'Usuário não encontrado!' });
+            await getRepository(User).restore(userId);
 
-            if (!user.deleted_at)
-                return reply
-                    .status(400)
-                    .send({ message: 'Conta não deletada!' });
-
-            if (!userUtil.comparePasswords(password, user.password))
-                return reply.status(401).send({ message: 'Senha Incorreta!' });
-
-            await userRepository.restore(user.id);
             reply.status(200).send({ message: 'ok' });
-        } catch (error) {
-            reply.status(500).send({ message: 'Internal Server Error', error });
+        } catch (err: any) {
+            const { status, message, error } = err;
+            reply.status(status).send({ message, error });
         }
     },
 };

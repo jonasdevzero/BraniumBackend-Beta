@@ -123,7 +123,7 @@ export default {
         },
     },
 
-    showPreRegistration: {
+    getPreRegistration: {
         response: {
             200: {
                 type: 'object',

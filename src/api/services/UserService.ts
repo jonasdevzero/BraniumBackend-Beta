@@ -1,10 +1,13 @@
-import { getRepository, ILike } from 'typeorm';
-import { userUtil } from '../helpers';
+import { getRepository, ILike, Not } from 'typeorm';
+import { crypt, upload } from '../helpers';
 import { PreRegistration, User } from '../models';
 
 // eslint-disable-next-line
 let rEmail =
     /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i;
+// eslint-disable-next-line
+let rUuid =
+    /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
 
 export default {
     /**
@@ -114,6 +117,13 @@ export default {
             try {
                 const { username, password } = data;
 
+                // prevents the username from being in the form of a uuid
+                if (rUuid.test(username))
+                    return reject({
+                        status: 400,
+                        message: 'Formato de "username" inválido!',
+                    });
+
                 const preRegistrationRepo = getRepository(PreRegistration);
                 const userRepository = getRepository(User);
 
@@ -161,15 +171,21 @@ export default {
 
     /**
      * Validate password
-     * @param login - The "username" or "email" of an user
+     * @param login - The `id`, `username` or `email` of an user
      * @param password - The password that will be validated
+     * @param requireDeleted - requires the account to have been deleted
      * @returns Returns the user id if it has been validated
      */
-    validatePassword(login: string, password: string): Promise<string> {
+    validatePassword(
+        login: string,
+        password: string,
+        requireDeleted?: boolean,
+    ): Promise<string> {
         return new Promise(async (resolve, reject) => {
             try {
                 const isEmail = rEmail.test(login);
-                const target = isEmail ? 'email' : 'username';
+                const isId = rUuid.test(login);
+                const target = isEmail ? 'email' : isId ? 'id' : 'username';
 
                 const user = await getRepository(User).findOne({
                     where: { [target]: login },
@@ -182,13 +198,19 @@ export default {
                         messsage: `"${target}" incorreto`,
                     });
 
-                if (user.deleted_at)
+                if (requireDeleted && !user.deleted_at)
+                    return reject({
+                        status: 400,
+                        message: 'Conta não deletada!',
+                    });
+
+                if (!requireDeleted && user.deleted_at)
                     return reject({
                         status: 400,
                         message: 'Sua conta foi deletada! Restaure-a!',
                     });
 
-                if (!userUtil.comparePasswords(password, user.password))
+                if (!crypt.comparePasswords(password, user.password))
                     return reject({ status: 401, message: 'Senha Incorreta!' });
 
                 resolve(user.id);
@@ -218,7 +240,7 @@ export default {
 
                 if (!user)
                     return reject({
-                        status: 400,
+                        status: 404,
                         message: 'Usuário não encontrado!',
                     });
 
@@ -229,12 +251,137 @@ export default {
                     });
 
                 await userRepository.update(user.id, {
-                    password: userUtil.encryptPassword(password),
+                    password: crypt.encryptPassword(password),
                     reset_token: undefined,
                     expire_token: undefined,
                 });
 
                 resolve();
+            } catch (error) {
+                reject({
+                    status: 500,
+                    message: 'Internal Server Error',
+                    error,
+                });
+            }
+        });
+    },
+
+    /**
+     * Updates only `name` and `username`
+     */
+    update(
+        id: string,
+        data: { name: string; username: string },
+    ): Promise<void> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const { username } = data;
+
+                const userRepository = getRepository(User);
+                const [user, existsUsername] = await Promise.all([
+                    userRepository.findOne(id),
+                    userRepository.findOne({
+                        where: { username, id: Not(id) },
+                    }),
+                ]);
+
+                if (!user)
+                    return reject({
+                        status: 404,
+                        message: 'Usuário não encontrado!',
+                    });
+
+                if (existsUsername)
+                    return reject({ status: 400, message: 'Username em uso!' });
+
+                await userRepository.update(id, data);
+
+                resolve();
+            } catch (error) {
+                reject({
+                    status: 500,
+                    message: 'Internal Server Error',
+                    error,
+                });
+            }
+        });
+    },
+
+    updateEmail(
+        id: string,
+        data: { email: string; password: string },
+    ): Promise<void> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const { email, password } = data;
+
+                const userRepository = getRepository(User);
+                const [user, existsEmail] = await Promise.all([
+                    userRepository.findOne(id),
+                    userRepository.findOne({ where: { id: Not(id), email } }),
+                ]);
+
+                if (!user)
+                    return reject({
+                        status: 404,
+                        message: 'Usuário não encontrado!',
+                    });
+
+                if (existsEmail)
+                    return reject({ status: 400, message: 'Email em uso!' });
+
+                if (!crypt.comparePasswords(password, user.password))
+                    return reject({ status: 401, message: 'Senha incorreta!' });
+
+                await userRepository.update(id, { email });
+
+                resolve();
+            } catch (error) {
+                reject({
+                    status: 500,
+                    message: 'Internal Server Error',
+                    error,
+                });
+            }
+        });
+    },
+
+    updatePicture(id: string, picture: any): Promise<string | undefined> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const userRepository = getRepository(User);
+                const user = await userRepository.findOne(id);
+
+                if (!user)
+                    return reject({
+                        status: 404,
+                        message: 'Error inesperado! Tente novamente!',
+                    });
+
+                let location;
+                if (picture) {
+                    const [{ Location }] = await Promise.all([
+                        upload.save(picture),
+                        user.picture ? upload.remove(user.picture) : null,
+                    ]);
+
+                    location = Location;
+                    await userRepository.update(id, { picture: Location });
+                } else if (user.picture) {
+                    await Promise.all([
+                        upload.remove(user.picture),
+                        userRepository.update(id, { picture: undefined }),
+                    ]).catch(error =>
+                        reject({
+                            status: 500,
+                            message: 'Não foi possível remover a imagem!',
+                            error,
+                        }),
+                    );
+                }
+
+                resolve(location);
             } catch (error) {
                 reject({
                     status: 500,
