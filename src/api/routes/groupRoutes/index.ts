@@ -1,7 +1,7 @@
 import { FastifyPluginOptions, FastifyInstance } from 'fastify';
-import authHook from '../../hooks/auth';
+import authHook from '../../middlewares/auth';
 import GroupController from '../../controllers/GroupController';
-import schema from '../_schema/groupSchema';
+import schema from '../../schemas/groupSchema';
 import serializeGroup from '../../views/GroupView';
 import usersRoutes from './usersRoutes';
 import messagesRoutes from './messagesRoutes';

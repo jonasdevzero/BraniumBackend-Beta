@@ -1,7 +1,7 @@
 import { FastifyPluginOptions, FastifyInstance } from 'fastify';
-import authHook from '../../hooks/auth';
+import authHook from '../../middlewares/auth';
 import ContactController from '../../controllers/ContactController';
-import contactSchema from '../_schema/contactSchema';
+import contactSchema from '../../schemas/contactSchema';
 import ContactView from '../../views/ContactView';
 import messagesRoutes from './messagesRoutes';
 

@@ -1,6 +1,6 @@
 import { FastifyPluginOptions, FastifyInstance } from 'fastify';
 import MessagesController from '../../controllers/GroupController/MessagesController';
-import schema from '../_schema/groupSchema/messagesSchema';
+import schema from '../../schemas/groupSchema/messagesSchema';
 
 export default function messagesRoutes(
     fastify: FastifyInstance,

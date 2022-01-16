@@ -1,6 +1,6 @@
 import { FastifyPluginOptions, FastifyInstance } from 'fastify';
 import MessagesController from '../../controllers/ContactController/MessagesController';
-import schema from '../_schema/contactSchema/messagesSchema';
+import schema from '../../schemas/contactSchema/messagesSchema';
 
 export default function contactMessagesRoutes(
     fastify: FastifyInstance,

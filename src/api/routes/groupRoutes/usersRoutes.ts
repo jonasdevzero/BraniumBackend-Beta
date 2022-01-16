@@ -1,7 +1,7 @@
 import { FastifyPluginOptions, FastifyInstance } from 'fastify';
 import UsersController from '../../controllers/GroupController/UsersController';
 import { serializeGroupUsers } from '../../views/GroupUserView';
-import schema from '../_schema/groupSchema/usersSchema';
+import schema from '../../schemas/groupSchema/usersSchema';
 
 export default function usersRoutes(
     fastify: FastifyInstance,

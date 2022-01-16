@@ -1,8 +1,8 @@
 import { FastifyPluginOptions, FastifyInstance } from 'fastify';
 import userController from '../controllers/UserController';
-import authHook from '../hooks/auth';
-import userSchema from './_schema/userSchema';
+import userSchema from '../schemas/userSchema';
 import { serializeAuth } from '../views/UserView';
+import { errorHandler, validatorCompiler, auth } from '../middlewares';
 
 export default function userRoutes(
     fastify: FastifyInstance,
@@ -21,7 +21,7 @@ export default function userRoutes(
         '/search',
         {
             schema: userSchema.search,
-            preValidation: authHook,
+            preValidation: auth,
         },
         userController.search,
     );
@@ -38,6 +38,8 @@ export default function userRoutes(
         '/pre_registration',
         {
             schema: userSchema.preRegistration,
+            validatorCompiler,
+            errorHandler,
         },
         userController.preRegistration,
     );
@@ -46,6 +48,8 @@ export default function userRoutes(
         '/registration/:id',
         {
             schema: userSchema.registration,
+            validatorCompiler,
+            errorHandler,
         },
         userController.registration,
     );
@@ -62,7 +66,7 @@ export default function userRoutes(
         '/auth',
         {
             schema: userSchema.auth,
-            preValidation: authHook,
+            preValidation: auth,
             preSerialization: serializeAuth,
         },
         userController.auth,
@@ -72,7 +76,9 @@ export default function userRoutes(
         '/',
         {
             schema: userSchema.update,
-            preValidation: authHook,
+            preValidation: auth,
+            validatorCompiler,
+            errorHandler,
         },
         userController.update,
     );
@@ -81,7 +87,9 @@ export default function userRoutes(
         '/email',
         {
             schema: userSchema.email,
-            preValidation: authHook,
+            preValidation: auth,
+            validatorCompiler,
+            errorHandler,
         },
         userController.email,
     );
@@ -90,7 +98,7 @@ export default function userRoutes(
         '/picture',
         {
             schema: userSchema.picture,
-            preValidation: authHook,
+            preValidation: auth,
         },
         userController.picture,
     );
@@ -114,8 +122,8 @@ export default function userRoutes(
     fastify.post(
         '/delete',
         {
-            schema: userSchema.Sdelete,
-            preValidation: authHook,
+            schema: userSchema.delete,
+            preValidation: auth,
         },
         userController.delete,
     );
