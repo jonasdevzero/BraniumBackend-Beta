@@ -4,7 +4,7 @@ import { Contact, ContactInvitation, User } from '../../models';
 export default {
     /**
      * @param id The ID of whoever is inviting
-     * @param contact_id The ID ofthe person being invited
+     * @param contact_id The ID of the person being invited
      */
     inviteUser(id: string, contact_id: string): Promise<ContactInvitation> {
         return new Promise(async (resolve, reject) => {

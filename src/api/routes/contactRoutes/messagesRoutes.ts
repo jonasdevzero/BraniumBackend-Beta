@@ -1,6 +1,7 @@
 import { FastifyPluginOptions, FastifyInstance } from 'fastify';
 import MessagesController from '../../controllers/ContactController/MessagesController';
 import schema from '../../schemas/contactSchema/messagesSchema';
+import { validatorCompiler, errorHandler } from '../../middlewares';
 
 export default function contactMessagesRoutes(
     fastify: FastifyInstance,
@@ -35,6 +36,8 @@ export default function contactMessagesRoutes(
         '/:message',
         {
             schema: schema.deleteOne,
+            validatorCompiler,
+            errorHandler,
         },
         MessagesController.deleteOne,
     );
