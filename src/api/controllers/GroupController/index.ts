@@ -1,5 +1,4 @@
 import { getRepository } from 'typeorm';
-import { parseBody, upload } from '../../helpers';
 import { ServerReply, ServerRequest } from '../../interfaces/controller';
 import GroupService from '../../services/GroupService';
 import { Group } from '../../models';

@@ -1,8 +1,7 @@
-import { wsUsers } from './connection';
-import { ContactInvitation, Contact, ContactMessage } from '../models';
-import { renderContact } from '../views/ContactView';
-import * as Actions from './actions';
+import { Contact, ContactInvitation, ContactMessage } from '../models';
+import { wsUsers } from '../websocket/connection';
 import { constants } from '../../config/constants';
+import { renderContact } from '../views/ContactView';
 
 export default {
     /** User Events */
@@ -24,14 +23,14 @@ export default {
 
             socket.emit(
                 'update',
-                Actions.update(constants.client.actions.USER_PUSH_DATA, {
+                constants.socketActions.update(constants.client.actions.USER_PUSH_DATA, {
                     field: 'contact_invitations',
                     set: { data: i },
                 }),
             );
             socket.emit(
                 'warn',
-                Actions.warn(
+                constants.socketActions.warn(
                     'info',
                     `${i.sender.username} enviou um convite de amizade!`,
                 ),
@@ -59,14 +58,14 @@ export default {
             // Emitting to invite sender the new contact
             socket.emit(
                 'update',
-                Actions.update(constants.client.actions.USER_PUSH_DATA, {
+                constants.socketActions.update(constants.client.actions.USER_PUSH_DATA, {
                     field: 'contacts',
                     set: { data },
                 }),
             );
             socket.emit(
                 'warn',
-                Actions.warn(
+                constants.socketActions.warn(
                     'success',
                     `${sender.contact.username} aceitou o seu convite de amizade!`,
                 ),
@@ -79,7 +78,7 @@ export default {
 
             socket.emit(
                 'warn',
-                Actions.warn(
+                constants.socketActions.warn(
                     'error',
                     `${i.user.username} recusou o seu convite de amizade!`,
                 ),
@@ -93,7 +92,7 @@ export default {
 
             socket?.emit(
                 'update',
-                Actions.update(constants.client.actions.UPDATE_ROOM, {
+                constants.socketActions.update(constants.client.actions.UPDATE_ROOM, {
                     field: 'contacts',
                     where: { id: myContact.contact_user_id },
                     set: { you_blocked: blocked },
@@ -102,7 +101,7 @@ export default {
 
             contactSocket?.emit(
                 'update',
-                Actions.update(constants.client.actions.UPDATE_ROOM, {
+                constants.socketActions.update(constants.client.actions.UPDATE_ROOM, {
                     field: 'contacts',
                     where: { id: contact.contact_user_id },
                     set: { blocked },
@@ -110,7 +109,7 @@ export default {
             );
             contactSocket?.emit(
                 'warn',
-                Actions.warn(
+                constants.socketActions.warn(
                     !blocked ? 'info' : 'error',
                     `${myContact.user.username} lhe ${
                         !blocked ? 'des' : ''
@@ -133,7 +132,7 @@ export default {
 
                 socketSender?.emit(
                     'update',
-                    Actions.update(
+                    constants.socketActions.update(
                         constants.client.actions.PUSH_CONTACT_MESSAGE,
                         {
                             set: { message: senderMessage },
@@ -143,7 +142,7 @@ export default {
                 );
                 socketReceiver?.emit(
                     'update',
-                    Actions.update(
+                    constants.socketActions.update(
                         constants.client.actions.PUSH_CONTACT_MESSAGE,
                         {
                             set: { message: receiverMessage },

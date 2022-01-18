@@ -17,6 +17,31 @@ export const constants = {
         },
     },
 
+    socketActions: {
+        warn(type: 'info' | 'success' | 'error', message: string) {
+            return {
+                type,
+                message,
+            };
+        },
+
+        update(
+            type: string,
+            args: {
+                field?: string;
+                where?: {
+                    id?: string;
+                };
+                set?: { [key: string]: any };
+            },
+        ) {
+            return {
+                type,
+                ...args,
+            };
+        },
+    },
+
     errorJwtMessages: {
         badRequestErrorMessage: 'Sessão inválida!',
         noAuthorizationInHeaderMessage: 'Sem autorização!',

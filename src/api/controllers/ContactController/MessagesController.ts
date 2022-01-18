@@ -2,8 +2,7 @@ import { getRepository } from 'typeorm';
 import { ServerRequest, ServerReply } from '../../interfaces/controller';
 import { Contact, ContactMessage } from '../../models';
 import ContactMessagesService from '../../services/ContactService/MessagesService';
-import { parseBody } from '../../helpers';
-import socketEmit from '../../websocket/emit';
+import WebSocketService from '../../services/WebSocketService';
 
 export default {
     async index(req: ServerRequest, reply: ServerReply) {
@@ -59,7 +58,11 @@ export default {
                     medias,
                 });
 
-            socketEmit.contact.messages.create(message, messageOfReceiver, to);
+            WebSocketService.contact.messages.create(
+                message,
+                messageOfReceiver,
+                to,
+            );
             reply.status(201).send({ message, to });
         } catch (error: any) {
             reply.status(error.status).send(error);

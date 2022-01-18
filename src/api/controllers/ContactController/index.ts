@@ -2,7 +2,7 @@ import { getRepository } from 'typeorm';
 import { ServerRequest, ServerReply } from '../../interfaces/controller';
 import { Contact } from '../../models';
 import ContactService from '../../services/ContactService';
-import socketEmit from '../../websocket/emit';
+import WebSocketService from '../../services/WebSocketService';
 
 export default {
     async show(req: ServerRequest, reply: ServerReply) {
@@ -34,7 +34,7 @@ export default {
 
             const invite = await ContactService.inviteUser(id, contact_id);
 
-            socketEmit.contact.invite(invite);
+            WebSocketService.contact.invite(invite);
             reply.status(201).send({ message: 'ok' });
         } catch (error: any) {
             reply.status(error.status).send(error);
@@ -51,7 +51,7 @@ export default {
                 invitation_id,
             );
 
-            socketEmit.contact.acceptInvite(contact, selfContact);
+            WebSocketService.contact.acceptInvite(contact, selfContact);
             reply.status(201).send({ contact });
         } catch (error: any) {
             reply.status(error.status).send(error);
@@ -68,7 +68,7 @@ export default {
                 invitation_id,
             );
 
-            socketEmit.contact.refuseInvite(invitation);
+            WebSocketService.contact.refuseInvite(invitation);
             reply.status(200).send({ message: 'ok' });
         } catch (error: any) {
             reply.status(error.status).send(error);
@@ -85,7 +85,7 @@ export default {
                 contact_id,
             );
 
-            socketEmit.contact.block(contact, selfContact);
+            WebSocketService.contact.block(contact, selfContact);
             reply.status(200).send({ you_blocked: !contact.you_blocked });
         } catch (error: any) {
             reply.status(error.status).send(error);

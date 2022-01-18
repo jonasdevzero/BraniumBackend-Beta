@@ -1,9 +1,9 @@
 import { FastifyInstance } from 'fastify';
 import { Socket } from 'socket.io';
 import { getRepository } from 'typeorm';
+import { constants } from '../../config/constants';
 import { User } from '../models';
 import SocketUsers from './users';
-import * as Actions from './actions';
 
 export const wsUsers = new SocketUsers();
 
@@ -44,7 +44,7 @@ export async function socketConnection(
         wsUsers.emitToContacts(
             id,
             'update',
-            Actions.update('UPDATE_ROOM', {
+            constants.socketActions.update('UPDATE_ROOM', {
                 field: 'contacts',
                 where: { id },
                 set: { online: true },
@@ -54,13 +54,13 @@ export async function socketConnection(
         socket.emit(
             'auth',
             null,
-            Actions.update('SET_CONTACTS_ONLINE', {
+            constants.socketActions.update('SET_CONTACTS_ONLINE', {
                 set: { contacts: contactsOnline },
             }),
         );
         socket.emit(
             'warn',
-            Actions.warn('info', `Bem-vindo, ${user.username}`),
+            constants.socketActions.warn('info', `Bem-vindo, ${user.username}`),
         );
 
         /* Event listeners */
@@ -73,7 +73,7 @@ export async function socketConnection(
             wsUsers.emitToContacts(
                 id,
                 'update',
-                Actions.update('UPDATE_ROOM', {
+                constants.socketActions.update('UPDATE_ROOM', {
                     field: 'contacts',
                     where: { id },
                     set: { online: false },
