@@ -1,5 +1,5 @@
 import { getRepository } from 'typeorm';
-import { upload } from '../../helpers';
+import { parseBody, upload } from '../../helpers';
 import { ServerReply, ServerRequest } from '../../interfaces/controller';
 import {
     Group,
@@ -51,7 +51,7 @@ export default {
                     .send({ message: 'Envie os dados no formato Multipart!' });
 
             const sender_id = req.user as string;
-            const { text, to, medias } = upload.parseBody(req.body);
+            const { text, to, medias } = parseBody(req.body);
 
             if (!text && !medias)
                 return reply

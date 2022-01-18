@@ -2,7 +2,7 @@ import { getRepository } from 'typeorm';
 import { ServerRequest, ServerReply } from '../../interfaces/controller';
 import { Contact, ContactMessage } from '../../models';
 import ContactMessagesService from '../../services/ContactService/MessagesService';
-import { upload } from '../../helpers';
+import { parseBody } from '../../helpers';
 import socketEmit from '../../websocket/emit';
 
 export default {
@@ -50,7 +50,7 @@ export default {
                     .send({ message: 'Envie os dados no formato Multipart!' });
 
             const sender_id = req.user.toString();
-            const { text, to, medias } = upload.parseBody(req.body);
+            const { text, to, medias } = parseBody(req.body);
 
             const [message, messageOfReceiver] =
                 await ContactMessagesService.create(sender_id, {

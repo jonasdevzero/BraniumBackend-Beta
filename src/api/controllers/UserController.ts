@@ -1,7 +1,7 @@
 import { getRepository } from 'typeorm';
 import { ServerRequest, ServerReply } from '../interfaces/controller';
 import { User, ContactInvitation, PreRegistration } from '../models';
-import { upload, mailer } from '../helpers';
+import { mailer, parseBody } from '../helpers';
 import { constants } from '../../config/constants';
 import UserService from '../services/UserService';
 
@@ -176,7 +176,7 @@ export default {
     async picture(req: ServerRequest, reply: ServerReply) {
         try {
             const id = req.user.toString();
-            const { picture } = upload.parseBody(req.body);
+            const { picture } = parseBody(req.body);
 
             const location = await UserService.updatePicture(id, picture);
 
