@@ -38,6 +38,8 @@ export default function groupRoutes(
         '/:id',
         {
             schema: schema.update,
+            validatorCompiler,
+            errorHandler,
         },
         GroupController.update,
     );
@@ -46,6 +48,8 @@ export default function groupRoutes(
         '/:id/picture',
         {
             schema: schema.update_picture,
+            validatorCompiler,
+            errorHandler,
         },
         GroupController.update_picture,
     );

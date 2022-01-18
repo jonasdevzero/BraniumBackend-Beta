@@ -2,6 +2,7 @@ import { FastifyPluginOptions, FastifyInstance } from 'fastify';
 import UsersController from '../../controllers/GroupController/UsersController';
 import { serializeGroupUsers } from '../../views/GroupUserView';
 import schema from '../../schemas/groupSchema/usersSchema';
+import { validatorCompiler, errorHandler } from '../../middlewares';
 
 export default function usersRoutes(
     fastify: FastifyInstance,
@@ -12,7 +13,7 @@ export default function usersRoutes(
         '/:group_id',
         {
             schema: schema.index,
-            preSerialization: serializeGroupUsers("users")
+            preSerialization: serializeGroupUsers('users'),
         },
         UsersController.index,
     );
@@ -21,7 +22,9 @@ export default function usersRoutes(
         '/',
         {
             schema: schema.add,
-            preSerialization: serializeGroupUsers("member")
+            preSerialization: serializeGroupUsers('member'),
+            validatorCompiler,
+            errorHandler,
         },
         UsersController.add,
     );
@@ -30,6 +33,8 @@ export default function usersRoutes(
         '/role',
         {
             schema: schema.role,
+            validatorCompiler,
+            errorHandler,
         },
         UsersController.role,
     );
@@ -38,6 +43,8 @@ export default function usersRoutes(
         '/remove',
         {
             schema: schema.remove,
+            validatorCompiler,
+            errorHandler,
         },
         UsersController.remove,
     );
