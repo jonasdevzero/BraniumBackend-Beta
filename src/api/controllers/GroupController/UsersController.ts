@@ -1,6 +1,6 @@
 import { getRepository } from 'typeorm';
 import { ServerReply, ServerRequest } from '../../interfaces/controller';
-import GroupUserService from '../../services/GroupService/UsersService';
+import GroupUsersService from '../../services/GroupService/UsersService';
 import { GroupUser } from '../../models';
 
 export default {
@@ -31,7 +31,7 @@ export default {
             const id = req.user as string;
             const { group_id, user_id } = req.body;
 
-            const member = await GroupUserService.addMember(id, {
+            const member = await GroupUsersService.addMember(id, {
                 group_id,
                 user_id,
             });
@@ -47,7 +47,7 @@ export default {
             const id = req.user as string;
             const { role } = req.body;
 
-            await GroupUserService.updateRole(id, req.body);
+            await GroupUsersService.updateRole(id, req.body);
 
             reply.status(200).send({ role });
         } catch (error) {
@@ -59,7 +59,7 @@ export default {
         try {
             const id = req.user as string;
 
-            await GroupUserService.removeMember(id, req.body);
+            await GroupUsersService.removeMember(id, req.body);
 
             reply.status(200).send({ message: 'ok' });
         } catch (error) {

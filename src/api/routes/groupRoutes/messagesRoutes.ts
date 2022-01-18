@@ -1,6 +1,7 @@
 import { FastifyPluginOptions, FastifyInstance } from 'fastify';
 import MessagesController from '../../controllers/GroupController/MessagesController';
 import schema from '../../schemas/groupSchema/messagesSchema';
+import { validatorCompiler, errorHandler } from '../../middlewares';
 
 export default function messagesRoutes(
     fastify: FastifyInstance,
@@ -19,6 +20,8 @@ export default function messagesRoutes(
         '/',
         {
             schema: schema.create,
+            validatorCompiler,
+            errorHandler,
         },
         MessagesController.create,
     );

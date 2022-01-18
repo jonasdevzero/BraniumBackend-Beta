@@ -1,3 +1,4 @@
+import * as yup from 'yup';
 import { defaultError, defaultMessage } from '../default';
 
 const index = {
@@ -46,6 +47,13 @@ const index = {
 };
 
 const create = {
+    body: yup
+        .object({
+            to: yup.string().required('Campo "to" é obrigatório!'),
+            text: yup.string(),
+            medias: yup.mixed(),
+        })
+        .required(),
     response: {
         201: {
             type: 'object',
