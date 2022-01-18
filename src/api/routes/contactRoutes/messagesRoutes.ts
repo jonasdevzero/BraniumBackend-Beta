@@ -20,6 +20,8 @@ export default function contactMessagesRoutes(
         '/',
         {
             schema: schema.create,
+            validatorCompiler,
+            errorHandler,
         },
         MessagesController.create,
     );

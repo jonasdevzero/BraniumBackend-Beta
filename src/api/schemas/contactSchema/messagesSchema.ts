@@ -49,6 +49,13 @@ export default {
     },
 
     create: {
+        body: yup
+            .object({
+                to: yup.string().required('Campo "to" é obrigatório!'),
+                text: yup.string(),
+                medias: yup.mixed(),
+            })
+            .required(),
         response: {
             201: {
                 type: 'object',
@@ -71,9 +78,16 @@ export default {
     },
 
     deleteOne: {
-        querystring: yup.object({
-            target: yup.string().matches(/^me$|^bidirectional$/, 'Query "target" inválido!')
-        }).required(),
+        querystring: yup
+            .object({
+                target: yup
+                    .string()
+                    .matches(
+                        /^me$|^bidirectional$/,
+                        'Query "target" inválido!',
+                    ),
+            })
+            .required(),
         response: {
             200: defaultMessage,
             '4xx': defaultError,

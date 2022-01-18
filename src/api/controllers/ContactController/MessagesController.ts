@@ -50,7 +50,7 @@ export default {
                     .send({ message: 'Envie os dados no formato Multipart!' });
 
             const sender_id = req.user.toString();
-            const { text, to, medias } = parseBody(req.body);
+            const { text, to, medias } = req.body;
 
             const [message, messageOfReceiver] =
                 await ContactMessagesService.create(sender_id, {
