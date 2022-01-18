@@ -14,6 +14,8 @@ export const constants = {
             PUSH_CONTACT_MESSAGE: 'PUSH_CONTACT_MESSAGE',
             UPDATE_ROOM: 'UPDATE_ROOM',
             SET_CONTACTS_ONLINE: 'SET_CONTACTS_ONLINE',
+            VIEW_ROOM_MESSAGES: 'VIEW_ROOM_MESSAGES',
+            REMOVE_ROOM_MESSAGE: 'REMOVE_ROOM_MESSAGE',
         },
     },
 
@@ -31,6 +33,7 @@ export const constants = {
                 field?: string;
                 where?: {
                     id?: string;
+                    [key: string]: any;
                 };
                 set?: { [key: string]: any };
             },

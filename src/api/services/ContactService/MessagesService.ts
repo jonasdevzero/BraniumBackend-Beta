@@ -144,8 +144,9 @@ export default {
      * View all messages from a contact
      * @param id The User ID that is viewing the messages
      * @param contact_id The user ID of the contact who is having the messages viewed
+     * @returns Returns the date that be viewed
      */
-    viewMessages(id: string, contact_id: string): Promise<void> {
+    viewMessages(id: string, contact_id: string): Promise<Date> {
         return new Promise(async (resolve, reject) => {
             try {
                 const contactRepository = getRepository(Contact);
@@ -181,9 +182,10 @@ export default {
                         }),
                     ]);
 
+                const viewed_at = new Date();
                 const viewMessages = (m: ContactMessage) =>
-                    contactMessageRepo.update(m, { viewed: true });
-                    
+                    contactMessageRepo.update(m.id, { viewed: true, viewed_at });
+
                 await Promise.all([
                     contactRepository.update(contact, { unread_messages: 0 }),
                     Promise.all([
@@ -192,7 +194,7 @@ export default {
                     ]),
                 ]);
 
-                resolve();
+                resolve(viewed_at);
             } catch (error) {
                 reject({
                     status: 500,
@@ -210,12 +212,13 @@ export default {
      * @param target The way the message is being deleted
      *  * `me` - delete the message only for a `Contact`
      *  * `bidirectional` - delete message for both `Contact`
+     * @returns Returns the User ID of the contact that the message was deleted
      */
     deleteOne(
         id: string,
         message_id: string,
         target: 'me' | 'bidirectional',
-    ): Promise<void> {
+    ): Promise<string> {
         return new Promise(async (resolve, reject) => {
             try {
                 const contactMessageRepo = getRepository(ContactMessage);
@@ -253,7 +256,7 @@ export default {
                         break;
                 }
 
-                resolve();
+                resolve(message.contact.contact_user_id);
             } catch (error) {
                 reject({
                     status: 500,

@@ -74,7 +74,11 @@ export default {
             const id = req.user as string;
             const contact_id = req.params.contact;
 
-            await ContactMessagesService.viewMessages(id, contact_id);
+            const viewed_at = await ContactMessagesService.viewMessages(
+                id,
+                contact_id,
+            );
+            WebSocketService.contact.messages.view(contact_id, id, viewed_at);
 
             reply.status(200).send({ message: 'ok' });
         } catch (error: any) {
@@ -88,7 +92,18 @@ export default {
             const message_id = req.params.message;
             let { target } = req.query;
 
-            await ContactMessagesService.deleteOne(id, message_id, target);
+            const contact_id = await ContactMessagesService.deleteOne(
+                id,
+                message_id,
+                target,
+            );
+            target === 'bidirectional'
+                ? WebSocketService.contact.messages.deleteOne(
+                      contact_id,
+                      id,
+                      message_id,
+                  )
+                : null;
 
             reply.status(200).send({ message: 'ok' });
         } catch (error: any) {

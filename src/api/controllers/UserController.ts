@@ -4,6 +4,7 @@ import { User, ContactInvitation, PreRegistration } from '../models';
 import { mailer, parseBody } from '../helpers';
 import { constants } from '../../config/constants';
 import UserService from '../services/UserService';
+import WebSocketService from '../services/WebSocketService';
 
 export default {
     async index(req: ServerRequest, reply: ServerReply) {
@@ -150,9 +151,11 @@ export default {
 
     async update(req: ServerRequest, reply: ServerReply) {
         try {
-            const id = req.user.toString();
+            const id = req.user as string;
+            const data = req.body;
 
-            await UserService.update(id, req.body);
+            await UserService.update(id, data);
+            WebSocketService.user.update(id, data)
 
             reply.status(200).send(req.body);
         } catch (error: any) {
@@ -175,10 +178,11 @@ export default {
 
     async picture(req: ServerRequest, reply: ServerReply) {
         try {
-            const id = req.user.toString();
+            const id = req.user as string;
             const { picture } = parseBody(req.body);
 
             const location = await UserService.updatePicture(id, picture);
+            WebSocketService.user.update_picture(id, location)
 
             reply.status(200).send({ location });
         } catch (error: any) {

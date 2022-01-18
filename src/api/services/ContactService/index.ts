@@ -98,8 +98,8 @@ export default {
      * @param id - The ID of who is accepting the invite
      * @param invitation_id - The ID of the invite
      * @returns Returns a `Promise<[Contact, Contact]>`
-     *  * [0] The `Contact` of who sent the invite
-     *  * [1] The `Contact` of who accept the invite
+     *  * [0] The `Contact` of who accept the invite
+     *  * [1] The `Contact` of who sent the invite
      */
     acceptInvite(
         id: string,
@@ -227,13 +227,11 @@ export default {
 
     /**
      * Block and unblock a contact
-     * @param id
-     * @param contact_id
-     * @returns Returns a `Promise<[Contact, Contact]>`
-     *  * [0] Is my contact that I have with the other user
-     *  * [1] Is the contact that the other user has with me.
+     * @param id The User ID who is blocking or unblocking
+     * @param contact_id The User ID of the contact who's being blocked or unblocked
+     * @returns Returns the `Contact` that i have with the outher user
      */
-    toggleBlock(id: string, contact_id: string): Promise<[Contact, Contact]> {
+    toggleBlock(id: string, contact_id: string): Promise<Contact> {
         return new Promise(async (resolve, reject) => {
             try {
                 const contactRepository = getRepository(Contact);
@@ -263,8 +261,9 @@ export default {
                         blocked: !selfContact.blocked,
                     }),
                 ]);
+                contact.you_blocked = !contact.you_blocked;
 
-                resolve([contact, selfContact]);
+                resolve(contact);
             } catch (error) {
                 reject({
                     status: 500,

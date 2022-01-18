@@ -29,12 +29,12 @@ export default {
 
     async invite(req: ServerRequest, reply: ServerReply) {
         try {
-            const id = req.user.toString();
+            const id = req.user as string;
             const contact_id = req.params.id;
 
             const invite = await ContactService.inviteUser(id, contact_id);
-
             WebSocketService.contact.invite(invite);
+
             reply.status(201).send({ message: 'ok' });
         } catch (error: any) {
             reply.status(error.status).send(error);
@@ -43,15 +43,15 @@ export default {
 
     async acceptInvite(req: ServerRequest, reply: ServerReply) {
         try {
-            const id = req.user.toString();
+            const id = req.user as string;
             const invitation_id = req.params.invite;
 
             const [contact, selfContact] = await ContactService.acceptInvite(
                 id,
                 invitation_id,
             );
-
             WebSocketService.contact.acceptInvite(contact, selfContact);
+
             reply.status(201).send({ contact });
         } catch (error: any) {
             reply.status(error.status).send(error);
@@ -67,8 +67,8 @@ export default {
                 id,
                 invitation_id,
             );
-
             WebSocketService.contact.refuseInvite(invitation);
+
             reply.status(200).send({ message: 'ok' });
         } catch (error: any) {
             reply.status(error.status).send(error);
@@ -77,16 +77,13 @@ export default {
 
     async block(req: ServerRequest, reply: ServerReply) {
         try {
-            const id = req.user.toString();
+            const id = req.user as string;
             const contact_id = req.params.id;
 
-            const [contact, selfContact] = await ContactService.toggleBlock(
-                id,
-                contact_id,
-            );
+            const contact = await ContactService.toggleBlock(id, contact_id);
+            WebSocketService.contact.block(contact);
 
-            WebSocketService.contact.block(contact, selfContact);
-            reply.status(200).send({ you_blocked: !contact.you_blocked });
+            reply.status(200).send({ you_blocked: contact.you_blocked });
         } catch (error: any) {
             reply.status(error.status).send(error);
         }
