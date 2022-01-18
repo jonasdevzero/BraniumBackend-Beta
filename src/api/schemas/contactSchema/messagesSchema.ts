@@ -9,6 +9,7 @@ const message = {
         sender_id: { type: 'string' },
         bidirectional_id: { type: 'string' },
         viewed: { type: 'boolean' },
+        viewed_at: { type: 'string', nullable: true },
         created_at: { type: 'string' },
         medias: {
             type: 'array',

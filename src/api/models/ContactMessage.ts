@@ -30,6 +30,9 @@ export default class ContactMessage extends BaseEntity {
     @Column()
     viewed: Boolean;
 
+    @Column({ nullable: true })
+    viewed_at: Date;
+
     @Column({ unsigned: true })
     created_at: Date;
 

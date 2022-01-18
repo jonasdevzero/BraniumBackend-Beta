@@ -32,6 +32,11 @@ export class createContactMessage1627309257892 implements MigrationInterface {
                         type: 'boolean',
                     },
                     {
+                        name: 'viewed_at',
+                        type: 'timestamp with time zone',
+                        isNullable: true,
+                    },
+                    {
                         name: 'sender_id',
                         type: 'uuid',
                         unsigned: true,
