@@ -3,6 +3,7 @@ import authHook from '../../middlewares/auth';
 import GroupController from '../../controllers/GroupController';
 import schema from '../../schemas/groupSchema';
 import serializeGroup from '../../views/GroupView';
+import { validatorCompiler, errorHandler } from '../../middlewares';
 import usersRoutes from './usersRoutes';
 import messagesRoutes from './messagesRoutes';
 
@@ -27,6 +28,8 @@ export default function groupRoutes(
         {
             schema: schema.create,
             preSerialization: serializeGroup,
+            validatorCompiler,
+            errorHandler,
         },
         GroupController.create,
     );

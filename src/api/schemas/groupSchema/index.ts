@@ -1,3 +1,4 @@
+import * as yup from 'yup';
 import { defaultError, defaultMessage } from '../default';
 
 const show = {
@@ -26,6 +27,26 @@ const show = {
 };
 
 const create = {
+    body: yup
+        .object({
+            name: yup.string().required('Campo "name" é obrigatório'),
+            description: yup
+                .string()
+                .required('Campo "description" é obrigatório'),
+            picture: yup
+                .object()
+                .typeError('Formto do campo "picture" inválido!'),
+            members: yup.lazy((value: any) => {
+                return typeof value === 'string'
+                    ? yup.string().uuid('Campo "members" inválido!')
+                    : Array.isArray(value)
+                    ? yup
+                          .array()
+                          .of(yup.string().uuid('Campo "members" inválido!'))
+                    : yup.string().nullable(true);
+            }),
+        })
+        .required(),
     response: {
         201: {
             type: 'object',
@@ -51,6 +72,12 @@ const create = {
 };
 
 const update = {
+    body: yup
+        .object({
+            name: yup.string().required('Campo "name" é obrigatório!'),
+            description: yup.string().required('Campo "name" é obrigatório!'),
+        })
+        .required(),
     response: {
         200: {
             type: 'object',
@@ -65,6 +92,13 @@ const update = {
 };
 
 const update_picture = {
+    body: yup
+        .object({
+            picture: yup
+                .object()
+                .typeError('Formato do campo "picture" é inválido!'),
+        })
+        .required(),
     response: {
         200: {
             type: 'object',
