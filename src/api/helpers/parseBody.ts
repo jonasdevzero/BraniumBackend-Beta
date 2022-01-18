@@ -6,9 +6,15 @@ export default function parseBody(body: any) {
     if (!isCyclic(body)) return body;
 
     for (const key of Object.keys(body)) {
-        !Array.isArray(body[key]) && !body[key]?.filename
-            ? (body[key] = body[key].value)
-            : null;
+        if (Array.isArray(body[key])) {
+            !body[key][0]?.filename
+                ? (body[key] = body[key].map((d: any) => d.value))
+                : null;
+        } else {
+            !body[key]?.filename
+                ? (body[key] = body[key].value)
+                : null;
+        }
     }
 
     return body;
