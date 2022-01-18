@@ -2,6 +2,7 @@ import { getRepository } from 'typeorm';
 import { ServerReply, ServerRequest } from '../../interfaces/controller';
 import GroupMessagesService from '../../services/GroupService/MessagesService';
 import { GroupMessage, GroupUser } from '../../models';
+import WebSocketService from '../../services/WebSocketService';
 
 export default {
     async index(req: ServerRequest, reply: ServerReply) {
@@ -53,6 +54,7 @@ export default {
                 text,
                 medias,
             });
+            WebSocketService.group.messages.create(message);
 
             reply.status(201).send({ message, to });
         } catch (error) {
@@ -65,7 +67,11 @@ export default {
             const id = req.user as string;
             const group_id = req.params.group_id;
 
-            await GroupMessagesService.viewMessages(id, group_id);
+            const viewed_at = await GroupMessagesService.viewMessages(
+                id,
+                group_id,
+            );
+            WebSocketService.group.messages.view(id, group_id, viewed_at);
 
             reply.status(200).send({ message: 'ok' });
         } catch (error) {
@@ -79,7 +85,11 @@ export default {
             const id = req.user as string;
             const message_id = req.params.id;
 
-            await GroupMessagesService.deleteOneMessage(id, message_id);
+            const group_id = await GroupMessagesService.deleteOneMessage(
+                id,
+                message_id,
+            );
+            WebSocketService.group.messages.delete(id, group_id, message_id);
 
             reply.status(200).send({ message: 'ok' });
         } catch (error) {

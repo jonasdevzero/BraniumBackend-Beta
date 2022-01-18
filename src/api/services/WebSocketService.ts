@@ -1,4 +1,11 @@
-import { Contact, ContactInvitation, ContactMessage } from '../models';
+import {
+    Contact,
+    ContactInvitation,
+    ContactMessage,
+    Group,
+    GroupMessage,
+    GroupUser,
+} from '../models';
 import { wsUsers } from '../websocket/connection';
 import { constants } from '../../config/constants';
 import { renderContact } from '../views/ContactView';
@@ -9,7 +16,7 @@ const {
 } = constants;
 
 /**
- * WebSocket Emit Service
+ * WebSocket Emit Events Service
  */
 export default {
     /**
@@ -239,7 +246,7 @@ export default {
 
                 socket.emit(
                     'update',
-                    socketActions.update(clientActions.VIEW_ROOM_MESSAGES, {
+                    socketActions.update(clientActions.VIEW_CONTACT_MESSAGES, {
                         field: 'contacts',
                         where: { id: viewer_id },
                         set: { viewed: true, viewed_at },
@@ -270,32 +277,204 @@ export default {
 
     /** Group Events */
     group: {
-        create() {},
+        /**
+         * Sends a WebSocket event to all members of the group
+         * @param creator_id - The User iD who's created the group
+         * @param group
+         */
+        create(creator_id: string, group: Group) {
+            group.users
+                .filter(u => u.user_id !== creator_id)
+                .forEach(u => {
+                    const socket = wsUsers.get(u.user_id)?.socket;
+                    if (!socket) return;
 
-        update() {},
+                    // Join in the group for future updates. ex: update group picture.
+                    socket.join(group.id);
+                    socket.emit(
+                        'update',
+                        socketActions.update(clientActions.USER_PUSH_DATA, {
+                            field: 'groups',
+                            set: { data: group },
+                        }),
+                    );
+                });
+        },
 
-        update_picture() {},
+        /**
+         * Sends a WebSocket event emitting the group update
+         * @param updated_by - The User ID who update the group
+         * @param group_id - The Group ID
+         * @param data - The data that to be send to the update
+         */
+        update(updated_by: string, group_id: string, data: any) {
+            const socket = wsUsers.get(updated_by)?.socket;
+            if (!socket) return;
 
-        leave() {},
+            socket.to(group_id).emit(
+                'update',
+                socketActions.update('UPDATE_ROOM', {
+                    field: 'groups',
+                    where: { id: group_id },
+                    set: data,
+                }),
+            );
+        },
 
-        delete() {},
+        /**
+         * Sends a WebSocket event to all members of the group
+         * @param id - The User ID who's leaving the group
+         * @param group_id - The group ID that was left
+         */
+        leave(id: string, group_id: string) {
+            const socket = wsUsers.get(id)?.socket;
+            if (!socket) return;
+
+            socket.leave(group_id);
+            socket.to(group_id).emit(
+                'update',
+                socketActions.update(clientActions.REMOVE_GROUP_USER, {
+                    where: { id: group_id, member_id: id },
+                }),
+            );
+        },
+
+        /**
+         * Sends a WebSocket event to all members of the group
+         * @param id - The User ID who's deleted the group
+         * @param group_id - The group ID that was deleted
+         */
+        delete(id: string, group_id: string) {
+            const socket = wsUsers.get(id)?.socket;
+            if (!socket) return;
+
+            socket.to(group_id).emit(
+                'update',
+                socketActions.update(clientActions.USER_REMOVE_DATA, {
+                    field: 'groups',
+                    where: { id: group_id },
+                }),
+            );
+        },
 
         /** Group Users Events */
         users: {
-            add() {},
+            /**
+             * Sends a WebSocket event to all members of the group adding a new member
+             * @param id
+             * @param member
+             */
+            add(id: string, member: GroupUser) {
+                const socket = wsUsers.get(id)?.socket;
+                if (!socket) return;
 
-            role() {},
+                socket.to(member.group_id).emit(
+                    'update',
+                    socketActions.update(clientActions.PUSH_GROUP_USER, {
+                        where: { id: member.group_id },
+                        set: { member },
+                    }),
+                );
+            },
 
-            remove() {},
+            /**
+             * Sends a WebSocket event to all members of the group updating the role of a member
+             * @param id The User ID who's updated the member role
+             */
+            role(
+                id: string,
+                data: { group_id: string; member_id: string; role: number },
+            ) {
+                const socket = wsUsers.get(id)?.socket;
+                if (!socket) return;
+
+                const { group_id, member_id, role } = data;
+                socket.to(group_id).emit(
+                    'update',
+                    socketActions.update(clientActions.UPDATE_GROUP_USER, {
+                        where: { id: group_id, member_id },
+                        set: { role },
+                    }),
+                );
+            },
+
+            /**
+             * Sends a WebSocket event to all members of the group removing a member
+             * @param id - The User ID who's removing the member
+             * @param group_id The Group ID where the member gonna be removed
+             * @param member_id - The Member ID that was gonna removed
+             */
+            remove(id: string, group_id: string, member_id: string) {
+                const socket = wsUsers.get(id)?.socket;
+                if (!socket) return;
+
+                socket.to(group_id).emit(
+                    'update',
+                    socketActions.update(clientActions.REMOVE_GROUP_USER, {
+                        where: { id: group_id, member_id },
+                    }),
+                );
+
+                const removedMember = wsUsers.get(member_id)?.socket;
+                removedMember?.leave(group_id);
+            },
         },
 
         /** Group Messages Events */
         messages: {
-            create() {},
+            /**
+             * Sends the `GroupMessage` to all members of the group
+             * @param message
+             */
+            create(message: GroupMessage) {
+                const socket = wsUsers.get(message.sender_id)?.socket;
+                if (!socket) return;
 
-            view() {},
+                socket.to(message.group_id).emit(
+                    'update',
+                    socketActions.update(clientActions.PUSH_GROUP_MESSAGE, {
+                        where: { id: message.group_id },
+                        set: { message },
+                    }),
+                );
+            },
 
-            delete() {},
+            /**
+             * Sends a WebSocket event to all members of the group
+             * @param id - The User ID who's viewing the messages
+             * @param group_id - The Group ID where the message are viewing
+             * @param viewed_at - The date that be viewed
+             */
+            view(id: string, group_id: string, viewed_at: Date) {
+                const socket = wsUsers.get(id)?.socket;
+                if (!socket) return;
+
+                socket.to(group_id).emit(
+                    'update',
+                    socketActions.update(clientActions.VIEW_GROUP_MESSAGES, {
+                        where: { id: group_id },
+                        set: { viewed_at },
+                    }),
+                );
+            },
+
+            /**
+             * Sends a WebSocket event to all members of the group for delete the message
+             * @param id - The User ID who's deleting the message
+             * @param group_id  - The Group ID where the message is gonna deleted
+             * @param message_id - The Message ID that be deleted
+             */
+            delete(id: string, group_id: string, message_id: string) {
+                const socket = wsUsers.get(id)?.socket;
+                if (!socket) return;
+
+                socket.to(group_id).emit(
+                    'update',
+                    socketActions.update(clientActions.REMOVE_ROOM_MESSAGE, {
+                        where: { id: group_id, message_id },
+                    }),
+                );
+            },
         },
     },
 };

@@ -18,7 +18,7 @@ interface CreateGroupMessageI {
 export default {
     /**
      * Create a `GroupMessage`
-     * @param data 
+     * @param data
      * @returns Return a `GroupMessage`
      */
     createMessage(data: CreateGroupMessageI): Promise<GroupMessage> {
@@ -126,8 +126,9 @@ export default {
      * View all messages from a group
      * @param id The User ID who is viewing the mssages
      * @param group_id The Group ID
+     * @returns Returns the date that be viewed
      */
-    viewMessages(id: string, group_id: string): Promise<void> {
+    viewMessages(id: string, group_id: string): Promise<Date> {
         return new Promise(async (resolve, reject) => {
             try {
                 const groupUserRepo = getRepository(GroupUser);
@@ -163,7 +164,7 @@ export default {
                     ),
                 ]);
 
-                resolve();
+                resolve(viewed_at);
             } catch (error) {
                 reject({
                     status: 500,
@@ -178,8 +179,9 @@ export default {
      * Delete one message message in a group
      * @param id The User ID who is deleting the mssage
      * @param message_id The Group Message ID
+     * @returns Returns the Group ID
      */
-    deleteOneMessage(id: string, message_id: string): Promise<void> {
+    deleteOneMessage(id: string, message_id: string): Promise<string> {
         return new Promise(async (resolve, reject) => {
             try {
                 const groupMessageRepo = getRepository(GroupMessage);
@@ -204,7 +206,7 @@ export default {
                     ...message.medias.map(m => upload.remove(m.url)),
                 ]);
 
-                resolve();
+                resolve(message.group_id);
             } catch (error) {
                 reject({
                     status: 500,

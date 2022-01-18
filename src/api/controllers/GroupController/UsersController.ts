@@ -2,6 +2,7 @@ import { getRepository } from 'typeorm';
 import { ServerReply, ServerRequest } from '../../interfaces/controller';
 import GroupUsersService from '../../services/GroupService/UsersService';
 import { GroupUser } from '../../models';
+import WebSocketService from '../../services/WebSocketService';
 
 export default {
     async index(req: ServerRequest, reply: ServerReply) {
@@ -35,6 +36,7 @@ export default {
                 group_id,
                 user_id,
             });
+            WebSocketService.group.users.add(id, member);
 
             reply.status(201).send({ member });
         } catch (error) {
@@ -48,6 +50,7 @@ export default {
             const { role } = req.body;
 
             await GroupUsersService.updateRole(id, req.body);
+            WebSocketService.group.users.role(id, req.body)
 
             reply.status(200).send({ role });
         } catch (error) {
@@ -58,8 +61,10 @@ export default {
     async remove(req: ServerRequest, reply: ServerReply) {
         try {
             const id = req.user as string;
+            const { group_id, member_id } = req.body;
 
-            await GroupUsersService.removeMember(id, req.body);
+            await GroupUsersService.removeMember(id, { group_id, member_id });
+            WebSocketService.group.users.remove(id, group_id, member_id)
 
             reply.status(200).send({ message: 'ok' });
         } catch (error) {

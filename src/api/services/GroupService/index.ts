@@ -138,7 +138,7 @@ export default {
     },
 
     /**
-     * 
+     *
      * @param id The User ID who is updating the group picture
      * @returns Returns the picture url
      */
@@ -197,9 +197,10 @@ export default {
     /**
      * Leave a group
      * @param id The User ID who is leaving the group
-     * @param group_id The group who is being leaved 
+     * @param group_id The group who is being leaved
+     * @returns Returns the current group leader_id
      */
-    leaveGroup(id: string, group_id: string): Promise<void> {
+    leaveGroup(id: string, group_id: string): Promise<string> {
         return new Promise(async (resolve, reject) => {
             try {
                 const groupRepository = getRepository(Group);
@@ -231,6 +232,7 @@ export default {
                         )[0];
 
                     if (oldestAdmin) {
+                        group.leader_id = oldestAdmin.user_id;
                         await groupRepository.update(group_id, {
                             leader_id: oldestAdmin.user_id,
                         });
@@ -242,6 +244,7 @@ export default {
                             )[0];
 
                         if (oldestUser) {
+                            group.leader_id = oldestUser.user_id;
                             await Promise.all([
                                 groupRepository.update(group_id, {
                                     leader_id: oldestUser.user_id,
@@ -257,7 +260,7 @@ export default {
 
                 await groupUserRepository.delete(member);
 
-                resolve();
+                resolve(group.leader_id);
             } catch (error) {
                 reject({
                     status: 500,
@@ -298,7 +301,7 @@ export default {
                     group.picture ? upload.remove(group.picture) : null,
                 ]);
 
-                resolve()
+                resolve();
             } catch (error) {
                 reject({
                     status: 500,

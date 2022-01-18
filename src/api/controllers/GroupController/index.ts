@@ -2,6 +2,7 @@ import { getRepository } from 'typeorm';
 import { ServerReply, ServerRequest } from '../../interfaces/controller';
 import GroupService from '../../services/GroupService';
 import { Group } from '../../models';
+import WebSocketService from '../../services/WebSocketService';
 
 export default {
     async show(req: ServerRequest, reply: ServerReply) {
@@ -35,6 +36,7 @@ export default {
             const id = req.user as string;
 
             const group = await GroupService.createGroup(id, req.body);
+            WebSocketService.group.create(id, group);
 
             reply.status(201).send({ group });
         } catch (error) {
@@ -48,7 +50,12 @@ export default {
             const group_id = req.params.id;
             const { name, description } = req.body;
 
-            await GroupService.updateGroup(id, { group_id, name, description });
+            await GroupService.updateGroup(id, {
+                group_id,
+                name,
+                description,
+            });
+            WebSocketService.group.update(id, group_id, { name, description });
 
             reply.status(200).send({ name, description });
         } catch (error) {
@@ -71,6 +78,9 @@ export default {
                 group_id,
                 picture,
             });
+            WebSocketService.group.update(id, group_id, {
+                picture: picture_url,
+            });
 
             reply.status(200).send({ picture: picture_url });
         } catch (error) {
@@ -83,7 +93,9 @@ export default {
             const id = req.user as string;
             const group_id = req.params.id;
 
-            await GroupService.leaveGroup(id, group_id);
+            const leader_id = await GroupService.leaveGroup(id, group_id);
+            WebSocketService.group.leave(id, group_id);
+            WebSocketService.group.update(id, group_id, { leader_id });
 
             reply.status(200).send({ message: 'ok' });
         } catch (error) {
@@ -98,6 +110,7 @@ export default {
             const group_id = req.params.id;
 
             await GroupService.deleteGroup(id, group_id);
+            WebSocketService.group.delete(id, group_id);
 
             reply.status(200).send({ message: 'ok' });
         } catch (error) {

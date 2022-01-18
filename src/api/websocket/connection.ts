@@ -29,7 +29,7 @@ export async function socketConnection(
 
         const userRepository = getRepository(User);
         const user = await userRepository.findOne(id, {
-            relations: ['contacts'],
+            relations: ['contacts', 'groups'],
         });
 
         if (!user) {
@@ -38,6 +38,7 @@ export async function socketConnection(
         }
 
         socket.join(id);
+        user.groups.forEach(g => socket.join(g.id));
         wsUsers.set(id, { socket, user });
         const contactsOnline = wsUsers.getContactsOnline(id);
 
