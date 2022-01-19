@@ -271,7 +271,7 @@ export default {
             200: {
                 type: 'object',
                 properties: {
-                    location: { type: 'string', nullable: true },
+                    picture_url: { type: 'string', nullable: true },
                 },
             },
             '4xx': defaultMessage,

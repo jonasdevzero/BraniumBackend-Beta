@@ -34,7 +34,7 @@ export default {
          * @param id - The User ID who is sending the update to your contacts
          * @param data - The data that being updated
          */
-        update(id: string, data: { name: string; username: string }) {
+        update(id: string, data: any) {
             const socket = wsUsers.get(id)?.socket;
             if (!socket) return;
 
@@ -51,31 +51,10 @@ export default {
             );
         },
 
-        /**
-         * Sends a WebSocket event to all contacts of `id`
-         * @param id - The User ID who is sending the update to your contacts
-         * @param picture - The picture `url`
-         */
-        update_picture(id: string, picture: string | undefined) {
-            const socket = wsUsers.get(id)?.socket;
-            if (!socket) return;
+        delete: (id: string) => {},
 
-            const contactsOnline = wsUsers.getContactsOnline(id);
-            contactsOnline.forEach(c =>
-                socket.to(c).emit(
-                    'update',
-                    socketActions.update(clientActions.UPDATE_ROOM, {
-                        field: 'contacts',
-                        where: { id },
-                        set: { picture },
-                    }),
-                ),
-            );
+        restore(id: string) {
         },
-
-        delete(id: string) {},
-
-        restore(id: string) {},
     },
 
     /** Contact Events */
