@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply, DoneFuncWithErrOrRes } from 'fastify';
 import { User } from '../models';
 import { renderContact } from './ContactView';
-import { renderGroupsFromUser } from './GroupView';
+import { renderGroupUser } from './GroupView';
 
 export function serializeAuth(
     _req: FastifyRequest,
@@ -33,6 +33,6 @@ function renderUser(user: User) {
         picture,
         contact_invitations: contact_invitations,
         contacts: renderContact(contacts),
-        groups: renderGroupsFromUser(groups),
+        groups: renderGroupUser(groups),
     };
 }

@@ -9,6 +9,7 @@ import {
 import { wsUsers } from '../websocket/connection';
 import { constants } from '../../config/constants';
 import { renderContact } from '../views/ContactView';
+import { renderGroupUser } from '../views/GroupView';
 
 const {
     socketActions,
@@ -53,8 +54,7 @@ export default {
 
         delete: (id: string) => {},
 
-        restore(id: string) {
-        },
+        restore(id: string) {},
     },
 
     /** Contact Events */
@@ -270,11 +270,12 @@ export default {
 
                     // Join in the group for future updates. ex: update group picture.
                     socket.join(group.id);
+                    u.group = group;
                     socket.emit(
                         'update',
                         socketActions.update(clientActions.USER_PUSH_DATA, {
                             field: 'groups',
-                            set: { data: group },
+                            set: { data: renderGroupUser(u) },
                         }),
                     );
                 });
@@ -354,6 +355,16 @@ export default {
                         set: { member },
                     }),
                 );
+
+                socket
+                    .to(member.user_id)
+                    .emit(
+                        'update',
+                        socketActions.update(clientActions.USER_PUSH_DATA, {
+                            field: 'groups',
+                            set: { data: renderGroupUser(member) },
+                        }),
+                    );
             },
 
             /**

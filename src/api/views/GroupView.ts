@@ -8,15 +8,54 @@ export default function serialize(
     done: DoneFuncWithErrOrRes,
 ) {
     const { group } = payload;
-    group ? done(null, { group: renderGroup(group) }) : done(null, payload);
+    group ? done(null, { group: renderGroupUser(group) }) : done(null, payload);
 }
 
-export function renderGroup(group: Group | Group[]) {
-    return Array.isArray(group) ? renderMany(group) : renderOne(group);
+interface GroupAsUser {
+    id: string;
+    name: string;
+    picture: string;
+    description: string;
+    created_at: Date;
+    leader_id: string;
+    last_message_time: Date;
+    users: never[];
+    messages: never[];
+    
+    role: number;
+    unread_messages: number;
+}
+
+/**
+ * Render groups from `GroupUser`
+ * @param groups - The groups as group user
+ * @returns Returns the group rendered more friendly to the frontend
+ */
+export function renderGroupUser(groups: GroupUser[] | GroupUser): GroupAsUser | GroupAsUser[] {
+    return Array.isArray(groups)
+        ? groups.map(g => renderOneGroupUser(g))
+        : renderOneGroupUser(groups);
+}
+
+function renderOneGroupUser(g: GroupUser) {
+    const { group, role, unread_messages } = g;
+    return {
+        ...renderOne(group),
+        role,
+        unread_messages,
+    };
 }
 
 function renderOne(group: Group) {
-    const { id, name, picture, description, created_at, leader_id } = group;
+    const {
+        id,
+        name,
+        picture,
+        description,
+        created_at,
+        leader_id,
+        last_message_time,
+    } = group;
 
     return {
         id,
@@ -25,22 +64,8 @@ function renderOne(group: Group) {
         description,
         created_at,
         leader_id,
+        last_message_time,
         users: [],
         messages: [],
     };
-}
-
-function renderMany(groups: Group[]) {
-    return groups.map(g => renderOne(g));
-}
-
-export function renderGroupsFromUser(groups: GroupUser[]) {
-    return groups.map(g => {
-        const { group, role, unread_messages } = g;
-        return {
-            ...renderOne(group),
-            role,
-            unread_messages,
-        };
-    });
 }

@@ -12,7 +12,7 @@ export default {
 
             const groupRepository = getRepository(Group);
             const group = await groupRepository.findOne(group_id, {
-                relations: ['users', 'users.user'],
+                relations: ['users'],
             });
 
             if (!group)
@@ -20,12 +20,17 @@ export default {
                     .status(404)
                     .send({ message: 'Grupo não encontrado!' });
 
-            if (!group.users.find(u => u.user_id === id))
+            const groupUser = group.users.find(u => u.user_id === id);
+
+            if (!groupUser)
                 return reply
                     .status(401)
                     .send({ message: 'Você não está no grupo!' });
 
-            reply.status(200).send({ group });
+            // For correctly render
+            groupUser.group = group;
+
+            reply.status(200).send({ group: groupUser });
         } catch (error) {
             reply.status(500).send({ message: 'Internal Server Error', error });
         }
@@ -38,7 +43,11 @@ export default {
             const group = await GroupService.createGroup(id, req.body);
             WebSocketService.group.create(id, group);
 
-            reply.status(201).send({ group });
+            // For correctly render
+            const groupUser = group.users.find(u => u.user_id === id);
+            groupUser!.group = group;
+
+            reply.status(201).send({ group: groupUser });
         } catch (error) {
             reply.status(500).send({ message: 'Internal Server Error', error });
         }

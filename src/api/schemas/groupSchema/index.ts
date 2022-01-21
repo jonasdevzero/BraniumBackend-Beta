@@ -16,8 +16,12 @@ export default {
                             description: { type: 'string' },
                             created_at: { type: 'string' },
                             leader_id: { type: 'string' },
+                            last_message_time: { type: 'string' },
                             users: { type: 'array', items: {} },
                             messages: { type: 'array', items: {} },
+
+                            role: { type: 'number' },
+                            unread_messages: { type: 'number' },
                         },
                     },
                 },
@@ -67,6 +71,9 @@ export default {
                             leader_id: { type: 'string' },
                             users: { type: 'array', items: {} },
                             messages: { type: 'array', items: {} },
+
+                            role: { type: 'number' },
+                            unread_messages: { type: 'number' },
                         },
                     },
                 },

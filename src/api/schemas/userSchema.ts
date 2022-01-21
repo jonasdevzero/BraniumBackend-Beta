@@ -67,6 +67,7 @@ const userAuth = {
                     leader_id: { type: 'string' },
                     role: { type: 'number' },
                     unread_messages: { type: 'number' },
+                    last_message_time: { type: 'string' },
                     messages: { type: 'array', items: {} },
                     users: {
                         type: 'array',
