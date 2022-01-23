@@ -3,12 +3,14 @@ import { getRepository } from 'typeorm';
 import FormData from 'form-data';
 import * as fs from 'fs';
 import { PreRegistration, User } from '../../src/api/models';
+import { upload } from '../../src/api/helpers';
 
 describe('user routes tests', () => {
     const app = build();
     let pre_registration = '';
     let jwt = '';
     let user_id = '';
+    let picture_url = '';
 
     test('index route test', async () => {
         const res = await app.inject({
@@ -137,7 +139,10 @@ describe('user routes tests', () => {
 
     test('update picture route test', async () => {
         const form = new FormData();
-        form.append('picture', fs.createReadStream('./tests/assets/picture.jpg'));
+        form.append(
+            'picture',
+            fs.createReadStream('./tests/assets/picture.jpg'),
+        );
 
         const res = await app.inject({
             method: 'PATCH',
@@ -148,6 +153,8 @@ describe('user routes tests', () => {
                 authorization: jwt,
             },
         });
+
+        picture_url = JSON.parse(res.payload)?.picture_url;
 
         expect(res.statusCode).toEqual(200);
     });
@@ -256,5 +263,8 @@ describe('user routes tests', () => {
             id: user_id,
             username: 'dev_test',
         });
+
+        // deleting the picture...
+        upload.remove(picture_url);
     });
 });
