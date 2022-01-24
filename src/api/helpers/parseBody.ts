@@ -11,9 +11,7 @@ export default function parseBody(body: any) {
                 ? (body[key] = body[key].map((d: any) => d.value))
                 : null;
         } else {
-            !body[key]?.filename
-                ? (body[key] = body[key].value)
-                : null;
+            !body[key]?.filename ? (body[key] = body[key].value) : null;
         }
     }
 

@@ -4,12 +4,10 @@ import { parseBody } from '../helpers';
 export default function validatorCompiler({ schema }: any) {
     return (data: any) => {
         try {
-            const result = schema.validateSync(
-                parseBody(data), // Parse Multipart Object
-                yupOptions,
-            );
+            const body = parseBody(data)
+            schema.validateSync(body, yupOptions);
             
-            return { value: result };
+            return { value: body };
         } catch (e: any) {
             // yup errors
             return { error: e.errors };
