@@ -28,7 +28,7 @@ const userAuth = {
                     },
                     sender_id: { type: 'string' },
                     receiver_id: { type: 'string' },
-                    created_at: { type: 'string' },
+                    created_at: { type: 'string' },                    
                 },
             },
         },
@@ -48,6 +48,16 @@ const userAuth = {
                     last_message_time: { type: 'string' },
                     blocked: { type: 'boolean' },
                     you_blocked: { type: 'boolean' },
+
+                    extra: {
+                        type: 'object',
+                        properties: {
+                            last_scroll_position: { type: 'number' },
+                            pushed_messages: { type: 'number' },
+                            fetch_messages_count: { type: 'number' },
+                            full_loaded: { type: 'boolean' },
+                        },
+                    },
                 },
             },
         },
@@ -72,6 +82,16 @@ const userAuth = {
                     users: {
                         type: 'array',
                         items: {},
+                    },
+
+                    extra: {
+                        type: 'object',
+                        properties: {
+                            last_scroll_position: { type: 'number' },
+                            pushed_messages: { type: 'number' },
+                            fetch_messages_count: { type: 'number' },
+                            full_loaded: { type: 'boolean' },
+                        },
                     },
                 },
             },

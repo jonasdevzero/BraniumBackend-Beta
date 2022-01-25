@@ -124,7 +124,6 @@ export default {
                 .where('user.id = :id', { id })
                 .leftJoinAndSelect('user.contacts', 'contacts')
                 .leftJoinAndSelect('contacts.contact', 'contact')
-                .orderBy('contacts.last_message_time', 'DESC')
                 .leftJoinAndMapMany(
                     'user.contact_invitations',
                     ContactInvitation,

@@ -17,6 +17,13 @@ export default {
                             last_message_time: { type: 'string' },
                             blocked: { type: 'boolean' },
                             you_blocked: { type: 'boolean' },
+
+                            extra: {
+                                last_scroll_position: -1,
+                                pushed_messages: 0,
+                                fetch_messages_count: 0,
+                                full_loaded: false,
+                            },
                         },
                     },
                 },
@@ -50,6 +57,13 @@ export default {
                             last_message_time: { type: 'string' },
                             blocked: { type: 'boolean' },
                             you_blocked: { type: 'boolean' },
+
+                            extra: {
+                                last_scroll_position: -1,
+                                pushed_messages: 0,
+                                fetch_messages_count: 0,
+                                full_loaded: false,
+                            },
                         },
                     },
                 },

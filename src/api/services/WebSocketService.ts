@@ -94,16 +94,9 @@ export default {
             wsUsers.pushContact(contacat.user_id, contacat);
             wsUsers.pushContact(selfContact.user_id, selfContact);
 
-            // Client Side Pattern - TEMPORARY!!!
             const data = {
                 ...renderContact(selfContact),
-                online: true,
-                extra: {
-                    last_scroll_position: undefined,
-                    pushed_messages: 0,
-                    fetch_messages_count: 0,
-                    full_loaded: false,
-                },
+                online: true
             };
 
             // Emitting to invite sender the new contact
@@ -255,6 +248,9 @@ export default {
          * @param group
          */
         create(creator_id: string, group: Group) {
+            const socketCreator = wsUsers.get(creator_id)?.socket;
+            socketCreator?.join(group.id)
+
             group.users
                 .filter(u => u.user_id !== creator_id)
                 .forEach(u => {

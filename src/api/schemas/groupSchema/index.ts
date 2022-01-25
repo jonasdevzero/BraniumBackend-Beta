@@ -22,6 +22,13 @@ export default {
 
                             role: { type: 'number' },
                             unread_messages: { type: 'number' },
+
+                            extra: {
+                                last_scroll_position: -1,
+                                pushed_messages: 0,
+                                fetch_messages_count: 0,
+                                full_loaded: false,
+                            },
                         },
                     },
                 },
@@ -72,6 +79,13 @@ export default {
 
                             role: { type: 'number' },
                             unread_messages: { type: 'number' },
+
+                            extra: {
+                                last_scroll_position: -1,
+                                pushed_messages: 0,
+                                fetch_messages_count: 0,
+                                full_loaded: false,
+                            },
                         },
                     },
                 },
