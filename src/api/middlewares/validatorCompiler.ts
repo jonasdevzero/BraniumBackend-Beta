@@ -5,9 +5,9 @@ export default function validatorCompiler({ schema }: any) {
     return (data: any) => {
         try {
             const body = parseBody(data)
-            schema.validateSync(body, yupOptions);
+            const resutl = schema.validateSync(body, yupOptions);
             
-            return { value: body };
+            return { value: resutl };
         } catch (e: any) {
             // yup errors
             return { error: e.errors };

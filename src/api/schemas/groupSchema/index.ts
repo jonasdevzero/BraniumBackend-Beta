@@ -38,9 +38,7 @@ export default {
                 description: yup
                     .string()
                     .required('Campo "description" é obrigatório'),
-                picture: yup
-                    .object()
-                    .typeError('Formto do campo "picture" inválido!'),
+                picture: yup.mixed(),
                 members: yup.lazy((value: any) => {
                     return typeof value === 'string'
                         ? yup.string().uuid('Campo "members" inválido!')
@@ -108,9 +106,7 @@ export default {
     update_picture: {
         body: yup
             .object({
-                picture: yup
-                    .object()
-                    .typeError('Formato do campo "picture" é inválido!'),
+                picture: yup.mixed(),
             })
             .required(),
         response: {
