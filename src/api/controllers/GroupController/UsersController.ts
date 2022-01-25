@@ -36,7 +36,7 @@ export default {
                 group_id,
                 user_id,
             });
-            WebSocketService.group.users.add(id, member);
+            WebSocketService.group.users.add(member);
 
             reply.status(201).send({ member });
         } catch (error) {
@@ -50,7 +50,7 @@ export default {
             const { role } = req.body;
 
             await GroupUsersService.updateRole(id, req.body);
-            WebSocketService.group.users.role(id, req.body)
+            WebSocketService.group.users.role(req.body);
 
             reply.status(200).send({ role });
         } catch (error) {
@@ -64,7 +64,7 @@ export default {
             const { group_id, member_id } = req.body;
 
             await GroupUsersService.removeMember(id, { group_id, member_id });
-            WebSocketService.group.users.remove(id, group_id, member_id)
+            WebSocketService.group.users.remove(group_id, member_id);
 
             reply.status(200).send({ message: 'ok' });
         } catch (error) {

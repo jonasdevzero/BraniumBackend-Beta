@@ -64,7 +64,7 @@ export default {
                 name,
                 description,
             });
-            WebSocketService.group.update(id, group_id, { name, description });
+            WebSocketService.group.update(group_id, { name, description });
 
             reply.status(200).send({ name, description });
         } catch (error) {
@@ -87,7 +87,7 @@ export default {
                 group_id,
                 picture,
             });
-            WebSocketService.group.update(id, group_id, {
+            WebSocketService.group.update(group_id, {
                 picture: picture_url,
             });
 
@@ -104,7 +104,7 @@ export default {
 
             const leader_id = await GroupService.leaveGroup(id, group_id);
             WebSocketService.group.leave(id, group_id);
-            WebSocketService.group.update(id, group_id, { leader_id });
+            WebSocketService.group.update(group_id, { leader_id });
 
             reply.status(200).send({ message: 'ok' });
         } catch (error) {
@@ -119,7 +119,7 @@ export default {
             const group_id = req.params.id;
 
             await GroupService.deleteGroup(id, group_id);
-            WebSocketService.group.delete(id, group_id);
+            WebSocketService.group.delete(group_id);
 
             reply.status(200).send({ message: 'ok' });
         } catch (error) {

@@ -3,6 +3,7 @@ import { Socket } from 'socket.io';
 import { getRepository } from 'typeorm';
 import { constants } from '../../config/constants';
 import { User } from '../models';
+import { ws } from '../plugins/websocket';
 import SocketUsers from './users';
 
 export const wsUsers = new SocketUsers();
@@ -38,10 +39,10 @@ export async function socketConnection(
         }
 
         socket.join(id);
-        user.groups.forEach(g => socket.join(g.id));
+        user.groups.forEach(gU => socket.join(gU.group_id));
         wsUsers.set(id, { socket, user });
         const contactsOnline = wsUsers.getContactsOnline(id);
-
+        
         wsUsers.emitToContacts(
             id,
             'update',

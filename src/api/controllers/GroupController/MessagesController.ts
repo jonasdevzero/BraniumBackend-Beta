@@ -56,7 +56,7 @@ export default {
             });
             WebSocketService.group.messages.create(message);
 
-            reply.status(201).send({ message, to });
+            reply.status(201).send({ message: {}, to });
         } catch (error) {
             reply.status(500).send({ message: 'Internal Server Error', error });
         }
@@ -71,7 +71,7 @@ export default {
                 id,
                 group_id,
             );
-            WebSocketService.group.messages.view(id, group_id, viewed_at);
+            WebSocketService.group.messages.view(group_id, viewed_at);
 
             reply.status(200).send({ message: 'ok' });
         } catch (error) {
@@ -89,7 +89,7 @@ export default {
                 id,
                 message_id,
             );
-            WebSocketService.group.messages.delete(id, group_id, message_id);
+            WebSocketService.group.messages.delete(group_id, message_id);
 
             reply.status(200).send({ message: 'ok' });
         } catch (error) {

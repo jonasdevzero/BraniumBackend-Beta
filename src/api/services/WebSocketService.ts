@@ -10,6 +10,7 @@ import { wsUsers } from '../websocket/connection';
 import { constants } from '../../config/constants';
 import { renderContact } from '../views/ContactView';
 import { renderGroupUser } from '../views/GroupView';
+import { ws } from '../plugins/websocket';
 
 const {
     socketActions,
@@ -36,12 +37,9 @@ export default {
          * @param data - The data that being updated
          */
         update(id: string, data: any) {
-            const socket = wsUsers.get(id)?.socket;
-            if (!socket) return;
-
             const contactsOnline = wsUsers.getContactsOnline(id);
             contactsOnline.forEach(c =>
-                socket.to(c).emit(
+                ws.to(c).emit(
                     'update',
                     socketActions.update(clientActions.UPDATE_ROOM, {
                         field: 'contacts',
@@ -159,7 +157,7 @@ export default {
                 }),
             );
 
-            socket?.to(contact.contact_user_id).emit(
+            ws.to(contact.contact_user_id).emit(
                 'update',
                 socketActions.update(clientActions.UPDATE_ROOM, {
                     field: 'contacts',
@@ -168,17 +166,15 @@ export default {
                 }),
             );
 
-            socket
-                ?.to(contact.contact_user_id)
-                .emit(
-                    'warn',
-                    socketActions.warn(
-                        !blocked ? 'info' : 'error',
-                        `${contact.user.username} lhe ${
-                            !blocked ? 'des' : ''
-                        }bloqueou`,
-                    ),
-                );
+            ws.to(contact.contact_user_id).emit(
+                'warn',
+                socketActions.warn(
+                    !blocked ? 'info' : 'error',
+                    `${contact.user.username} lhe ${
+                        !blocked ? 'des' : ''
+                    }bloqueou`,
+                ),
+            );
         },
 
         /** Contact Messages Events */
@@ -194,17 +190,14 @@ export default {
                 messageOfReceiver: ContactMessage,
                 to: string,
             ) {
-                const socketSender = wsUsers.get(message.sender_id)?.socket;
-                const socketReceiver = wsUsers.get(to)?.socket;
-
-                socketSender?.emit(
+                ws.to(message.sender_id).emit(
                     'update',
                     socketActions.update(clientActions.PUSH_CONTACT_MESSAGE, {
                         set: { message: message },
                         where: { id: to },
                     }),
                 );
-                socketReceiver?.emit(
+                ws.to(to).emit(
                     'update',
                     socketActions.update(clientActions.PUSH_CONTACT_MESSAGE, {
                         set: { message: messageOfReceiver },
@@ -283,15 +276,11 @@ export default {
 
         /**
          * Sends a WebSocket event emitting the group update
-         * @param updated_by - The User ID who update the group
          * @param group_id - The Group ID
          * @param data - The data that to be send to the update
          */
-        update(updated_by: string, group_id: string, data: any) {
-            const socket = wsUsers.get(updated_by)?.socket;
-            if (!socket) return;
-
-            socket.to(group_id).emit(
+        update(group_id: string, data: any) {
+            ws.to(group_id).emit(
                 'update',
                 socketActions.update('UPDATE_ROOM', {
                     field: 'groups',
@@ -311,7 +300,7 @@ export default {
             if (!socket) return;
 
             socket.leave(group_id);
-            socket.to(group_id).emit(
+            ws.to(group_id).emit(
                 'update',
                 socketActions.update(clientActions.REMOVE_GROUP_USER, {
                     where: { id: group_id, member_id: id },
@@ -321,14 +310,10 @@ export default {
 
         /**
          * Sends a WebSocket event to all members of the group
-         * @param id - The User ID who's deleted the group
          * @param group_id - The group ID that was deleted
          */
-        delete(id: string, group_id: string) {
-            const socket = wsUsers.get(id)?.socket;
-            if (!socket) return;
-
-            socket.to(group_id).emit(
+        delete(group_id: string) {
+            ws.to(group_id).emit(
                 'update',
                 socketActions.update(clientActions.USER_REMOVE_DATA, {
                     field: 'groups',
@@ -341,14 +326,10 @@ export default {
         users: {
             /**
              * Sends a WebSocket event to all members of the group adding a new member
-             * @param id
-             * @param member
+             * @param member - The member who's added
              */
-            add(id: string, member: GroupUser) {
-                const socket = wsUsers.get(id)?.socket;
-                if (!socket) return;
-
-                socket.to(member.group_id).emit(
+            add(member: GroupUser) {
+                ws.to(member.group_id).emit(
                     'update',
                     socketActions.update(clientActions.PUSH_GROUP_USER, {
                         where: { id: member.group_id },
@@ -356,30 +337,21 @@ export default {
                     }),
                 );
 
-                socket
-                    .to(member.user_id)
-                    .emit(
-                        'update',
-                        socketActions.update(clientActions.USER_PUSH_DATA, {
-                            field: 'groups',
-                            set: { data: renderGroupUser(member) },
-                        }),
-                    );
+                ws.to(member.user_id).emit(
+                    'update',
+                    socketActions.update(clientActions.USER_PUSH_DATA, {
+                        field: 'groups',
+                        set: { data: renderGroupUser(member) },
+                    }),
+                );
             },
 
             /**
              * Sends a WebSocket event to all members of the group updating the role of a member
-             * @param id The User ID who's updated the member role
              */
-            role(
-                id: string,
-                data: { group_id: string; member_id: string; role: number },
-            ) {
-                const socket = wsUsers.get(id)?.socket;
-                if (!socket) return;
-
+            role(data: { group_id: string; member_id: string; role: number }) {
                 const { group_id, member_id, role } = data;
-                socket.to(group_id).emit(
+                ws.to(group_id).emit(
                     'update',
                     socketActions.update(clientActions.UPDATE_GROUP_USER, {
                         where: { id: group_id, member_id },
@@ -390,15 +362,11 @@ export default {
 
             /**
              * Sends a WebSocket event to all members of the group removing a member
-             * @param id - The User ID who's removing the member
              * @param group_id The Group ID where the member gonna be removed
              * @param member_id - The Member ID that was gonna removed
              */
-            remove(id: string, group_id: string, member_id: string) {
-                const socket = wsUsers.get(id)?.socket;
-                if (!socket) return;
-
-                socket.to(group_id).emit(
+            remove(group_id: string, member_id: string) {
+                ws.to(group_id).emit(
                     'update',
                     socketActions.update(clientActions.REMOVE_GROUP_USER, {
                         where: { id: group_id, member_id },
@@ -417,10 +385,8 @@ export default {
              * @param message
              */
             create(message: GroupMessage) {
-                const socket = wsUsers.get(message.sender_id)?.socket;
-                if (!socket) return;
-
-                socket.to(message.group_id).emit(
+                // ws.to(message.group_id).emit("warn", { type: "success", message: "message created" })
+                ws.to(message.group_id).emit(
                     'update',
                     socketActions.update(clientActions.PUSH_GROUP_MESSAGE, {
                         where: { id: message.group_id },
@@ -431,15 +397,11 @@ export default {
 
             /**
              * Sends a WebSocket event to all members of the group
-             * @param id - The User ID who's viewing the messages
              * @param group_id - The Group ID where the message are viewing
              * @param viewed_at - The date that be viewed
              */
-            view(id: string, group_id: string, viewed_at: Date) {
-                const socket = wsUsers.get(id)?.socket;
-                if (!socket) return;
-
-                socket.to(group_id).emit(
+            view(group_id: string, viewed_at: Date) {
+                ws.to(group_id).emit(
                     'update',
                     socketActions.update(clientActions.VIEW_GROUP_MESSAGES, {
                         where: { id: group_id },
@@ -450,15 +412,11 @@ export default {
 
             /**
              * Sends a WebSocket event to all members of the group for delete the message
-             * @param id - The User ID who's deleting the message
              * @param group_id  - The Group ID where the message is gonna deleted
              * @param message_id - The Message ID that be deleted
              */
-            delete(id: string, group_id: string, message_id: string) {
-                const socket = wsUsers.get(id)?.socket;
-                if (!socket) return;
-
-                socket.to(group_id).emit(
+            delete(group_id: string, message_id: string) {
+                ws.to(group_id).emit(
                     'update',
                     socketActions.update(clientActions.REMOVE_ROOM_MESSAGE, {
                         where: { id: group_id, message_id },
