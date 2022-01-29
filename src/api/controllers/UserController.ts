@@ -181,7 +181,7 @@ export default {
             const { picture } = parseBody(req.body);
 
             const picture_url = await UserService.updatePicture(id, picture);
-            WebSocketService.user.update(id, { picture: picture_url })
+            WebSocketService.user.update(id, { picture: picture_url || "" })
 
             reply.status(200).send({ picture_url });
         } catch (error: any) {
