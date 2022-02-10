@@ -67,9 +67,10 @@ export async function socketConnection(
 
         /* Event listeners */
 
-        socket.on('is-online', (contact_id, callback) =>
-            callback(!!wsUsers.get(contact_id)),
-        );
+        socket.on('is-online', (user: string | string[], callback) => {
+            !Array.isArray(user) ? callback(!!wsUsers.get(user)) :
+                callback(user.map(u => ({ id: u, online: !!wsUsers.get(u) })))
+        });
 
         socket.on('disconnect', () => {
             wsUsers.emitToContacts(
