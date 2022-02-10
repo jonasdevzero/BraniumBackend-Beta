@@ -40,9 +40,9 @@ export async function socketConnection(
 
         socket.join(id);
         user.groups.forEach(gU => socket.join(gU.group_id));
-        wsUsers.set(id, { socket, user });
+        wsUsers.set(id, { socket, user, rooms: user.groups.map(gU => gU.group_id) });
         const contactsOnline = wsUsers.getContactsOnline(id);
-        
+
         wsUsers.emitToContacts(
             id,
             'update',
@@ -52,6 +52,7 @@ export async function socketConnection(
                 set: { online: true },
             }),
         );
+        wsUsers.emitStatusToRooms(id, true);
 
         socket.emit(
             'auth',
@@ -68,11 +69,15 @@ export async function socketConnection(
         /* Event listeners */
 
         socket.on('is-online', (user: string | string[], callback) => {
-            !Array.isArray(user) ? callback(!!wsUsers.get(user)) :
-                callback(user.map(u => ({ id: u, online: !!wsUsers.get(u) })))
+            !Array.isArray(user)
+                ? callback(!!wsUsers.get(user))
+                : callback(
+                      user.map(u => ({ id: u, online: !!wsUsers.get(u) })),
+                  );
         });
 
         socket.on('disconnect', () => {
+            wsUsers.emitStatusToRooms(id, false);
             wsUsers.emitToContacts(
                 id,
                 'update',

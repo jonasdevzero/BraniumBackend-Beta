@@ -96,7 +96,7 @@ export default {
 
             const data = {
                 ...renderContact(selfContact),
-                online: true
+                online: true,
             };
 
             // Emitting to invite sender the new contact
@@ -249,8 +249,9 @@ export default {
          */
         create(creator_id: string, group: Group) {
             const socketCreator = wsUsers.get(creator_id)?.socket;
-            socketCreator?.join(group.id)
+            socketCreator?.join(group.id);
 
+            group.users.forEach(u => wsUsers.pushRoom(u.user_id, group.id));
             group.users
                 .filter(u => u.user_id !== creator_id)
                 .forEach(u => {
@@ -259,6 +260,7 @@ export default {
 
                     // Join in the group for future updates. ex: update group picture.
                     socket.join(group.id);
+
                     u.group = group;
                     socket.emit(
                         'update',
@@ -295,6 +297,7 @@ export default {
             const socket = wsUsers.get(id)?.socket;
             if (!socket) return;
 
+            wsUsers.removeRoom(id, group_id);
             socket.leave(group_id);
             ws.to(group_id).emit(
                 'update',
@@ -325,6 +328,7 @@ export default {
              * @param member - The member who's added
              */
             add(member: GroupUser) {
+                wsUsers.pushRoom(member.user_id, member.group_id);
                 ws.to(member.group_id).emit(
                     'update',
                     socketActions.update(clientActions.PUSH_GROUP_USER, {
@@ -362,6 +366,7 @@ export default {
              * @param member_id - The Member ID that was gonna removed
              */
             remove(group_id: string, member_id: string) {
+                wsUsers.removeRoom(member_id, group_id);
                 ws.to(group_id).emit(
                     'update',
                     socketActions.update(clientActions.REMOVE_GROUP_USER, {

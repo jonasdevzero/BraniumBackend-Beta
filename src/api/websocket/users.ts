@@ -1,9 +1,17 @@
 import { Contact, User } from '../models';
 import { Socket } from 'socket.io';
+import { ws } from '../plugins/websocket';
+import { constants } from '../../config/constants';
+
+const {
+    socketActions,
+    client: { actions: clientActions },
+} = constants;
 
 interface SocketUser {
     user: User;
     socket: Socket;
+    rooms: string[];
 }
 
 export default class SocketUsers {
@@ -25,6 +33,7 @@ export default class SocketUsers {
         this.users.delete(id);
     }
 
+    // Contacts methods
     pushContact(id: string, contact: Contact) {
         const wsUser = this.get(id);
         if (!wsUser) return;
@@ -53,5 +62,40 @@ export default class SocketUsers {
 
         const contacts = this.getContactsOnline(id);
         for (const c of contacts) socket.to(c).emit(event, ...args);
+    }
+
+    // Rooms methods
+    pushRoom(id: string, roomId: string) {
+        const wsUser = this.get(id);
+        if (!wsUser) return;
+
+        wsUser.rooms.push(roomId);
+        this.set(id, wsUser);
+    }
+
+    removeRoom(id: string, roomId: string) {
+        const wsUser = this.get(id);
+        if (!wsUser) return;
+
+        wsUser.rooms.filter(r => r !== roomId);
+        this.set(id, wsUser);
+    }
+
+    /**
+     * Emit event to all rooms if the User is `online` or `offline`
+     */
+    emitStatusToRooms(id: string, status: boolean) {
+        const wsUser = this.get(id);
+        if (!wsUser) return;
+
+        wsUser.rooms.forEach(r =>
+            ws.emit(
+                'update',
+                socketActions.update(clientActions.UPDATE_GROUP_USER, {
+                    where: { id: r, member_id: id },
+                    set: { online: status },
+                }),
+            ),
+        );
     }
 }
