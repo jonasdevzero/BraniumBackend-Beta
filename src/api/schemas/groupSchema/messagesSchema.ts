@@ -2,6 +2,14 @@ import * as yup from 'yup';
 import { defaultError, defaultMessage } from '../default';
 
 const index = {
+    querystring: {
+        type: 'object',
+        properties: {
+            limit: { type: 'number', nullable: true },
+            skip: { type: 'number', nullable: true },
+            skip_u: { type: 'number', nullable: true },
+        },
+    },
     response: {
         200: {
             type: 'object',
