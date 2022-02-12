@@ -32,7 +32,7 @@ function build(opts = {}) {
 
     app.register(websocketPlugin, {
         cors: {
-            origin: '*',
+            origin: process.env.WEBSOCKET_CLIENT || "*",
         },
     });
 
