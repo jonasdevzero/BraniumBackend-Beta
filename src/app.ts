@@ -1,5 +1,5 @@
 import 'dotenv';
-import fastify from 'fastify';
+import fastify, { FastifyServerOptions } from 'fastify';
 import fastifyCors from 'fastify-cors';
 import fastifyJwt from 'fastify-jwt';
 import fastifyMultipart from 'fastify-multipart';
@@ -11,7 +11,7 @@ import { constants } from './config/constants';
 
 const SECRET = process.env.USER_SECRET || 'zero';
 
-function build(opts = {}) {
+function build(opts = {} as FastifyServerOptions) {
     const app = fastify(opts);
 
     app.register(fastifyCors, {
