@@ -61,7 +61,8 @@ export default class SocketUsers {
         if (!socket) return;
 
         const contacts = this.getContactsOnline(id);
-        for (const c of contacts) socket.to(c).emit(event, ...args);
+        for (const c of contacts) 
+            ws.to(c).emit(event, ...args);
     }
 
     // Rooms methods
@@ -69,7 +70,8 @@ export default class SocketUsers {
         const wsUser = this.get(id);
         if (!wsUser) return;
 
-        wsUser.rooms.push(roomId);
+        const newRooms = [...wsUser.rooms, roomId];
+        wsUser.rooms = newRooms;
         this.set(id, wsUser);
     }
 
@@ -77,7 +79,8 @@ export default class SocketUsers {
         const wsUser = this.get(id);
         if (!wsUser) return;
 
-        wsUser.rooms.filter(r => r !== roomId);
+        const updatedRooms = wsUser.rooms.filter(r => r !== roomId);
+        wsUser.rooms = updatedRooms;
         this.set(id, wsUser);
     }
 
@@ -89,7 +92,7 @@ export default class SocketUsers {
         if (!wsUser) return;
 
         wsUser.rooms.forEach(r =>
-            ws.emit(
+            ws.to(r).emit(
                 'update',
                 socketActions.update(clientActions.UPDATE_GROUP_USER, {
                     where: { id: r, member_id: id },
