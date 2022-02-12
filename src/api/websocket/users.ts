@@ -1,104 +1,159 @@
-import { Contact, User } from '../models';
-import { Socket } from 'socket.io';
-import { ws } from '../plugins/websocket';
+import { Server } from 'socket.io';
 import { constants } from '../../config/constants';
 
-const {
-    socketActions,
-    client: { actions: clientActions },
-} = constants;
+const clientActions = constants.client.actions;
 
-interface SocketUser {
-    user: User;
-    socket: Socket;
-    rooms: string[];
+interface WSUser {
+    socketId: string;
+    contacts: string[];
+    groups: string[];
 }
 
-export default class SocketUsers {
-    users: Map<string, SocketUser>;
+const kWsUsers = Symbol('kWsUsers');
+export class WsUsersController {
+    [kWsUsers]: Map<string, WSUser>;
 
     constructor() {
-        this.users = new Map();
+        this[kWsUsers] = new Map();
     }
 
-    get(id: string) {
-        return this.users.get(id);
+    /**
+     * Find one WSUser by `User ID`
+     * @param userId - The User ID
+     */
+    findOne(userId: string) {
+        return this[kWsUsers].get(userId);
     }
 
-    set(id: string, user: SocketUser) {
-        this.users.set(id, user);
+    /**
+     * Sets a new WSUser where the key is the `User ID`
+     * @param userId - The User ID
+     * @param user - The WSUser that be seted
+     */
+    set(userId: string, user: WSUser) {
+        this[kWsUsers].set(userId, user);
+
+        return this;
     }
 
-    remove(id: string) {
-        this.users.delete(id);
+    /**
+     * Removes a WSUser and emit a event to all contacts and group informing the logout
+     * @param userId - The User ID
+     */
+    remove(userId: string) {
+        this.broadcastToContacts(userId, 'update', {
+            type: clientActions.UPDATE_ROOM,
+            field: 'contacts',
+            where: { id: userId },
+            set: { online: false },
+        }).broadcastToGroups(userId, 'update', {
+            type: clientActions.UPDATE_GROUP_USER,
+            where: { member_id: userId },
+            set: { online: false },
+        });
+
+        this[kWsUsers].delete(userId);
     }
 
-    // Contacts methods
-    pushContact(id: string, contact: Contact) {
-        const wsUser = this.get(id);
-        if (!wsUser) return;
-
-        wsUser.user.contacts.push(contact);
-        this.set(id, wsUser);
+    /**
+     * Check if a user is online
+     * @param userId - The User Id that gonna be checked
+     */
+    isOnline(userId: string) {
+        return this[kWsUsers].has(userId);
     }
 
-    getContactsOnline(id: string) {
-        const user = this.get(id)?.user;
-        if (!user) return [];
+    /* ---------- Contact Methods ---------- */
 
-        const contactsOnline: string[] = [];
-        for (const { contact_user_id } of user.contacts) {
-            !!this.get(contact_user_id)
-                ? contactsOnline.push(contact_user_id)
-                : null;
-        }
+    /**
+     * Add a new contact to the WSUser for webwocket events
+     * @param userId - The `User ID` that adding the new contact
+     * @param contactId - The `User ID` of the contact
+     */
+    addContact(userId: string, contactId: string) {
+        const wsUser = this.findOne(userId);
+        if (!wsUser) return this;
+
+        wsUser.contacts.push(contactId);
+        this[kWsUsers].set(userId, wsUser);
+
+        return this;
+    }
+
+    /**
+     * Get all contacts online
+     * @param userId -The `User ID` that's getting your contacts online
+     * @returns Returns a String[ ] with the `User ID` of each contact
+     */
+    getContactsOnline(userId: string) {
+        const wsUser = this[kWsUsers].get(userId);
+        if (!wsUser) return [];
+
+        const contactsOnline = wsUser.contacts.filter(c => this.isOnline(c));
 
         return contactsOnline;
     }
 
-    emitToContacts(id: string, event: string, ...args: any[]) {
-        const socket = this.get(id)?.socket;
-        if (!socket) return;
+    /**
+     * Broadcast a event to all contacts
+     * @param userId - The User ID that's sending the event
+     * @param event - The event name
+     * @param args - The arguments of the event
+     */
+    broadcastToContacts(userId: string, event: string, action: any) {
+        const contacts = this.getContactsOnline(userId);
 
-        const contacts = this.getContactsOnline(id);
-        for (const c of contacts) 
-            ws.to(c).emit(event, ...args);
+        for (const c of contacts) globalThis.ws.to(c).emit(event, action);
+
+        return this;
     }
 
-    // Rooms methods
-    pushRoom(id: string, roomId: string) {
-        const wsUser = this.get(id);
+    /* ---------- Group Methods ---------- */
+
+    /**
+     * Add a new group to WSUser and join in the socket room
+     * @param userId - The User ID that's adding the group
+     * @param groupId - The Group ID that's be added
+     */
+    addGroup(userId: string, groupId: string) {
+        const wsUser = this.findOne(userId);
         if (!wsUser) return;
 
-        const newRooms = [...wsUser.rooms, roomId];
-        wsUser.rooms = newRooms;
-        this.set(id, wsUser);
-    }
+        const socket = globalThis.ws.sockets.sockets.get(wsUser.socketId);
+        socket?.join(groupId);
 
-    removeRoom(id: string, roomId: string) {
-        const wsUser = this.get(id);
-        if (!wsUser) return;
-
-        const updatedRooms = wsUser.rooms.filter(r => r !== roomId);
-        wsUser.rooms = updatedRooms;
-        this.set(id, wsUser);
+        wsUser.groups.push(groupId);
+        this[kWsUsers].set(userId, wsUser);
     }
 
     /**
-     * Emit event to all rooms if the User is `online` or `offline`
+     * Removes a group and leave it
+     * @param userId - The User that's removing the group
+     * @param groupId - The group's be removed
      */
-    emitStatusToRooms(id: string, status: boolean) {
-        const wsUser = this.get(id);
+    removeGroup(userId: string, groupId: string) {
+        const wsUser = this.findOne(userId);
         if (!wsUser) return;
 
-        wsUser.rooms.forEach(r =>
-            ws.to(r).emit(
-                'update',
-                socketActions.update(clientActions.UPDATE_GROUP_USER, {
-                    where: { id: r, member_id: id },
-                    set: { online: status },
-                }),
-            ),
-        );
+        const socket = globalThis.ws.sockets.sockets.get(wsUser.socketId);
+        socket?.leave(groupId);
+
+        wsUser.groups = wsUser.groups.filter(g => g !== groupId);
+        this[kWsUsers].set(userId, wsUser);
+    }
+
+    /**
+     * Broadcast a event to all groups
+     * @param userId - The User ID that's sending the event
+     * @param event - The event name
+     * @param args - The arguments of the event
+     */
+    broadcastToGroups(userId: string, event: string, action: any) {
+        const wsUser = this.findOne(userId);
+        if (!wsUser) return this;
+
+        for (const g of wsUser.groups) globalThis.ws.to(g).emit(event, action);
+
+        return this;
     }
 }

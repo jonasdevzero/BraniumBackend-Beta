@@ -6,16 +6,12 @@ import {
     GroupMessage,
     GroupUser,
 } from '../models';
-import { wsUsers } from '../websocket/connection';
+import { wsUsersController } from '../websocket/connection';
 import { constants } from '../../config/constants';
 import { renderContact } from '../views/ContactView';
 import { renderGroupUser } from '../views/GroupView';
-import { ws } from '../plugins/websocket';
 
-const {
-    socketActions,
-    client: { actions: clientActions },
-} = constants;
+const clientActions = constants.client.actions;
 
 /**
  * WebSocket Emit Events Service
@@ -26,7 +22,7 @@ export default {
      * @param id - User ID
      */
     isOnline(id: string) {
-        return !!wsUsers.get(id);
+        return !!wsUsersController.findOne(id);
     },
 
     /** User Events */
@@ -37,17 +33,12 @@ export default {
          * @param data - The data that being updated
          */
         update(id: string, data: any) {
-            const contactsOnline = wsUsers.getContactsOnline(id);
-            contactsOnline.forEach(c =>
-                ws.to(c).emit(
-                    'update',
-                    socketActions.update(clientActions.UPDATE_ROOM, {
-                        field: 'contacts',
-                        where: { id },
-                        set: data,
-                    }),
-                ),
-            );
+            wsUsersController.broadcastToContacts(id, 'update', {
+                type: clientActions.UPDATE_ROOM,
+                field: 'contacts',
+                where: { id },
+                set: data,
+            });
         },
 
         delete: (id: string) => {},
@@ -62,58 +53,42 @@ export default {
          * @param invite - The invite that be send to the receiver of him
          */
         invite(invite: ContactInvitation) {
-            const socket = wsUsers.get(invite.receiver_id)?.socket;
-            if (!socket) return;
+            const to = invite.receiver_id;
 
-            socket.emit(
-                'update',
-                socketActions.update(clientActions.USER_PUSH_DATA, {
-                    field: 'contact_invitations',
-                    set: { data: invite },
-                }),
-            );
-            socket.emit(
-                'warn',
-                socketActions.warn(
-                    'info',
-                    `${invite.sender.username} enviou um convite de amizade!`,
-                ),
-            );
+            globalThis.ws.to(to).emit('update', {
+                type: clientActions.USER_PUSH_DATA,
+                field: 'contact_invitations',
+                set: { data: invite },
+            });
+            globalThis.ws.to(to).emit('warn', {
+                type: 'info',
+                message: `${invite.sender.username} enviou um convite de amizade!`,
+            });
         },
 
         /**
          * Sends a WebSocket event for the sender of invite
-         * @param contacat - Is my contact that I have with the other user
+         * @param contact - Is my contact that I have with the other user
          * @param selfContact - Is the contact that the other user has with me
          */
-        acceptInvite(contacat: Contact, selfContact: Contact) {
-            const socket = wsUsers.get(selfContact.user_id)?.socket;
-            if (!socket) return;
+        acceptInvite(contact: Contact, selfContact: Contact) {
+            const inviter = selfContact.user_id;
 
             // Pushing new contacts for futures updates with them. ex: emit logout for contacts.
-            wsUsers.pushContact(contacat.user_id, contacat);
-            wsUsers.pushContact(selfContact.user_id, selfContact);
+            wsUsersController
+                .addContact(contact.user_id, contact.contact_user_id)
+                .addContact(inviter, selfContact.contact_user_id);
 
-            const data = {
-                ...renderContact(selfContact),
-                online: true,
-            };
-
-            // Emitting to invite sender the new contact
-            socket.emit(
-                'update',
-                socketActions.update(clientActions.USER_PUSH_DATA, {
-                    field: 'contacts',
-                    set: { data },
-                }),
-            );
-            socket.emit(
-                'warn',
-                socketActions.warn(
-                    'success',
-                    `${selfContact.contact.username} aceitou o seu convite de amizade!`,
-                ),
-            );
+            // Emitting to invite sender the new contact and a success warn
+            globalThis.ws.to(inviter).emit('update', {
+                type: clientActions.USER_PUSH_DATA,
+                field: 'contacts',
+                set: { data: { ...renderContact(selfContact), online: true } },
+            });
+            globalThis.ws.to(inviter).emit('warn', {
+                type: 'success',
+                message: `${selfContact.contact.username} aceitou o seu convite de amizade!`,
+            });
         },
 
         /**
@@ -121,16 +96,12 @@ export default {
          * @param invite - The invite that was refused
          */
         refuseInvite(invite: ContactInvitation) {
-            const socket = wsUsers.get(invite.sender_id)?.socket;
-            if (!socket) return;
+            const to = invite.sender_id;
 
-            socket.emit(
-                'warn',
-                socketActions.warn(
-                    'error',
-                    `${invite.user.username} recusou o seu convite de amizade!`,
-                ),
-            );
+            globalThis.ws.to(to).emit('warn', {
+                type: 'error',
+                message: `${invite.user.username} recusou o seu convite de amizade!`,
+            });
         },
 
         /**
@@ -138,36 +109,30 @@ export default {
          * @param contacat - Is my contact that I have with the other user
          */
         block(contact: Contact) {
-            const socket = wsUsers.get(contact.user_id)?.socket;
-            const blocked = contact.you_blocked;
+            const blocker = contact.user_id; // can be blocker or unblocker
+            const blocked = contact.contact_user_id; // can be the blocked or unblocked
+            const isBlocked = contact.you_blocked;
 
-            socket?.emit(
-                'update',
-                socketActions.update(clientActions.UPDATE_ROOM, {
-                    field: 'contacts',
-                    where: { id: contact.contact_user_id },
-                    set: { you_blocked: blocked },
-                }),
-            );
+            globalThis.ws.to(blocker).emit('update', {
+                type: clientActions.UPDATE_ROOM,
+                field: 'contacts',
+                where: { id: contact.contact_user_id },
+                set: { you_blocked: isBlocked },
+            });
 
-            ws.to(contact.contact_user_id).emit(
-                'update',
-                socketActions.update(clientActions.UPDATE_ROOM, {
-                    field: 'contacts',
-                    where: { id: contact.contact_user_id },
-                    set: { blocked },
-                }),
-            );
+            globalThis.ws.to(blocked).emit('update', {
+                type: clientActions.UPDATE_ROOM,
+                field: 'contacts',
+                where: { id: blocked },
+                set: { blocked: isBlocked },
+            });
 
-            ws.to(contact.contact_user_id).emit(
-                'warn',
-                socketActions.warn(
-                    !blocked ? 'info' : 'error',
-                    `${contact.user.username} lhe ${
-                        !blocked ? 'des' : ''
-                    }bloqueou`,
-                ),
-            );
+            globalThis.ws.to(blocked).emit('warn', {
+                type: !isBlocked ? 'info' : 'error',
+                message: `${contact.user.username} lhe ${
+                    !isBlocked ? 'des' : ''
+                }bloqueou`,
+            });
         },
 
         /** Contact Messages Events */
@@ -183,20 +148,17 @@ export default {
                 messageOfReceiver: ContactMessage,
                 to: string,
             ) {
-                ws.to(message.sender_id).emit(
-                    'update',
-                    socketActions.update(clientActions.PUSH_CONTACT_MESSAGE, {
-                        set: { message: message },
-                        where: { id: to },
-                    }),
-                );
-                ws.to(to).emit(
-                    'update',
-                    socketActions.update(clientActions.PUSH_CONTACT_MESSAGE, {
-                        set: { message: messageOfReceiver },
-                        where: { id: message.sender_id },
-                    }),
-                );
+                globalThis.ws.to(message.sender_id).emit('update', {
+                    type: clientActions.PUSH_CONTACT_MESSAGE,
+                    set: { message: message },
+                    where: { id: to },
+                });
+
+                globalThis.ws.to(to).emit('update', {
+                    type: clientActions.PUSH_CONTACT_MESSAGE,
+                    set: { message: messageOfReceiver },
+                    where: { id: message.sender_id },
+                });
             },
 
             /**
@@ -206,17 +168,12 @@ export default {
              * @param viewed_at - The date that be viewed
              */
             view(id: string, viewer_id: string, viewed_at: Date) {
-                const socket = wsUsers.get(id)?.socket;
-                if (!socket) return;
-
-                socket.emit(
-                    'update',
-                    socketActions.update(clientActions.VIEW_CONTACT_MESSAGES, {
-                        field: 'contacts',
-                        where: { id: viewer_id },
-                        set: { viewed: true, viewed_at },
-                    }),
-                );
+                globalThis.ws.to(id).emit('update', {
+                    type: clientActions.VIEW_CONTACT_MESSAGES,
+                    field: 'contacts',
+                    where: { id: viewer_id },
+                    set: { viewed: true, viewed_at },
+                });
             },
 
             /**
@@ -226,16 +183,11 @@ export default {
              * @param message_id  - The message ID was be deleted
              */
             deleteOne(id: string, sender_id: string, message_id: string) {
-                const socket = wsUsers.get(id)?.socket;
-                if (!socket) return;
-
-                socket.emit(
-                    'update',
-                    socketActions.update(clientActions.REMOVE_ROOM_MESSAGE, {
-                        field: 'contacts',
-                        where: { id: sender_id, message_id },
-                    }),
-                );
+                globalThis.ws.to(id).emit('update', {
+                    type: clientActions.REMOVE_ROOM_MESSAGE,
+                    field: 'contacts',
+                    where: { id: sender_id, message_id },
+                });
             },
         },
     },
@@ -248,27 +200,19 @@ export default {
          * @param group
          */
         create(creator_id: string, group: Group) {
-            const socketCreator = wsUsers.get(creator_id)?.socket;
-            socketCreator?.join(group.id);
+            const users = group.users;
 
-            group.users.forEach(u => wsUsers.pushRoom(u.user_id, group.id));
-            group.users
+            users.forEach(u => wsUsersController.addGroup(u.user_id, group.id));
+            users
                 .filter(u => u.user_id !== creator_id)
                 .forEach(u => {
-                    const socket = wsUsers.get(u.user_id)?.socket;
-                    if (!socket) return;
-
-                    // Join in the group for future updates. ex: update group picture.
-                    socket.join(group.id);
-
                     u.group = group;
-                    socket.emit(
-                        'update',
-                        socketActions.update(clientActions.USER_PUSH_DATA, {
-                            field: 'groups',
-                            set: { data: renderGroupUser(u) },
-                        }),
-                    );
+
+                    globalThis.ws.to(u.user_id).emit('update', {
+                        type: clientActions.USER_PUSH_DATA,
+                        field: 'groups',
+                        set: { data: renderGroupUser(u) },
+                    });
                 });
         },
 
@@ -278,14 +222,12 @@ export default {
          * @param data - The data that to be send to the update
          */
         update(group_id: string, data: any) {
-            ws.to(group_id).emit(
-                'update',
-                socketActions.update('UPDATE_ROOM', {
-                    field: 'groups',
-                    where: { id: group_id },
-                    set: data,
-                }),
-            );
+            globalThis.ws.to(group_id).emit('update', {
+                type: clientActions.UPDATE_ROOM,
+                field: 'groups',
+                where: { id: group_id },
+                set: data,
+            });
         },
 
         /**
@@ -294,17 +236,12 @@ export default {
          * @param group_id - The group ID that was left
          */
         leave(id: string, group_id: string) {
-            const socket = wsUsers.get(id)?.socket;
-            if (!socket) return;
+            wsUsersController.removeGroup(id, group_id);
 
-            wsUsers.removeRoom(id, group_id);
-            socket.leave(group_id);
-            ws.to(group_id).emit(
-                'update',
-                socketActions.update(clientActions.REMOVE_GROUP_USER, {
-                    where: { id: group_id, member_id: id },
-                }),
-            );
+            globalThis.ws.to(group_id).emit('update', {
+                type: clientActions.REMOVE_GROUP_USER,
+                where: { id: group_id, member_id: id },
+            });
         },
 
         /**
@@ -312,13 +249,11 @@ export default {
          * @param group_id - The group ID that was deleted
          */
         delete(group_id: string) {
-            ws.to(group_id).emit(
-                'update',
-                socketActions.update(clientActions.USER_REMOVE_DATA, {
-                    field: 'groups',
-                    where: { id: group_id },
-                }),
-            );
+            globalThis.ws.to(group_id).emit('update', {
+                type: clientActions.USER_REMOVE_DATA,
+                field: 'groups',
+                where: { id: group_id },
+            });
         },
 
         /** Group Users Events */
@@ -328,22 +263,19 @@ export default {
              * @param member - The member who's added
              */
             add(member: GroupUser) {
-                wsUsers.pushRoom(member.user_id, member.group_id);
-                ws.to(member.group_id).emit(
-                    'update',
-                    socketActions.update(clientActions.PUSH_GROUP_USER, {
-                        where: { id: member.group_id },
-                        set: { member },
-                    }),
-                );
+                // Adding the member in the group
+                wsUsersController.addGroup(member.user_id, member.group_id);
 
-                ws.to(member.user_id).emit(
-                    'update',
-                    socketActions.update(clientActions.USER_PUSH_DATA, {
-                        field: 'groups',
-                        set: { data: renderGroupUser(member) },
-                    }),
-                );
+                globalThis.ws.to(member.group_id).emit('update', {
+                    type: clientActions.PUSH_GROUP_USER,
+                    where: { id: member.group_id },
+                    set: { member },
+                });
+                globalThis.ws.to(member.user_id).emit('update', {
+                    type: clientActions.USER_PUSH_DATA,
+                    field: 'groups',
+                    set: { data: renderGroupUser(member) },
+                });
             },
 
             /**
@@ -351,13 +283,12 @@ export default {
              */
             role(data: { group_id: string; member_id: string; role: number }) {
                 const { group_id, member_id, role } = data;
-                ws.to(group_id).emit(
-                    'update',
-                    socketActions.update(clientActions.UPDATE_GROUP_USER, {
-                        where: { id: group_id, member_id },
-                        set: { role },
-                    }),
-                );
+
+                globalThis.ws.to(group_id).emit('update', {
+                    tyep: clientActions.UPDATE_GROUP_USER,
+                    where: { id: group_id, member_id },
+                    set: { role },
+                });
             },
 
             /**
@@ -366,16 +297,12 @@ export default {
              * @param member_id - The Member ID that was gonna removed
              */
             remove(group_id: string, member_id: string) {
-                wsUsers.removeRoom(member_id, group_id);
-                ws.to(group_id).emit(
-                    'update',
-                    socketActions.update(clientActions.REMOVE_GROUP_USER, {
-                        where: { id: group_id, member_id },
-                    }),
-                );
+                wsUsersController.removeGroup(member_id, group_id);
 
-                const removedMember = wsUsers.get(member_id)?.socket;
-                removedMember?.leave(group_id);
+                globalThis.ws.to(group_id).emit('update', {
+                    type: clientActions.REMOVE_GROUP_USER,
+                    where: { id: group_id, member_id },
+                });
             },
         },
 
@@ -386,14 +313,11 @@ export default {
              * @param message
              */
             create(message: GroupMessage) {
-                // ws.to(message.group_id).emit("warn", { type: "success", message: "message created" })
-                ws.to(message.group_id).emit(
-                    'update',
-                    socketActions.update(clientActions.PUSH_GROUP_MESSAGE, {
-                        where: { id: message.group_id },
-                        set: { message },
-                    }),
-                );
+                globalThis.ws.to(message.group_id).emit('update', {
+                    type: clientActions.PUSH_GROUP_MESSAGE,
+                    where: { id: message.group_id },
+                    set: { message },
+                });
             },
 
             /**
@@ -402,13 +326,11 @@ export default {
              * @param viewed_at - The date that be viewed
              */
             view(group_id: string, viewed_at: Date) {
-                ws.to(group_id).emit(
-                    'update',
-                    socketActions.update(clientActions.VIEW_GROUP_MESSAGES, {
-                        where: { id: group_id },
-                        set: { viewed_at },
-                    }),
-                );
+                globalThis.ws.to(group_id).emit('update', {
+                    type: clientActions.VIEW_GROUP_MESSAGES,
+                    where: { id: group_id },
+                    set: { viewed_at },
+                });
             },
 
             /**
@@ -417,12 +339,10 @@ export default {
              * @param message_id - The Message ID that be deleted
              */
             delete(group_id: string, message_id: string) {
-                ws.to(group_id).emit(
-                    'update',
-                    socketActions.update(clientActions.REMOVE_ROOM_MESSAGE, {
-                        where: { id: group_id, message_id },
-                    }),
-                );
+                globalThis.ws.to(group_id).emit('update', {
+                    type: clientActions.REMOVE_ROOM_MESSAGE,
+                    where: { id: group_id, message_id },
+                });
             },
         },
     },

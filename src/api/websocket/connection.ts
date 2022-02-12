@@ -3,16 +3,18 @@ import { Socket } from 'socket.io';
 import { getRepository } from 'typeorm';
 import { constants } from '../../config/constants';
 import { User } from '../models';
-import { ws } from '../plugins/websocket';
-import SocketUsers from './users';
+import { WsUsersController } from './users';
 
-export const wsUsers = new SocketUsers();
+const clientActions = constants.client.actions;
+
+export const wsUsersController = new WsUsersController();
 
 export async function socketConnection(
     socket: Socket,
     fastify: FastifyInstance,
 ) {
     try {
+        /* ---------- User Auth ---------- */
         const jwt = socket.handshake.query.jwt as string;
 
         if (!jwt) {
@@ -37,59 +39,60 @@ export async function socketConnection(
             socket.emit('auth', 'Usuário não encontrado');
             return socket.disconnect();
         }
+        /* ---------- Ending User Auth ---------- */
+
+        const contacts = user.contacts.map(c => c.contact_user_id);
+        const groups = user.groups.map(g => g.group_id);
 
         socket.join(id);
-        user.groups.forEach(gU => socket.join(gU.group_id));
-        wsUsers.set(id, { socket, user, rooms: user.groups.map(gU => gU.group_id) });
-        const contactsOnline = wsUsers.getContactsOnline(id);
+        groups.forEach(g => socket.join(g));
 
-        wsUsers.emitToContacts(
-            id,
-            'update',
-            constants.socketActions.update('UPDATE_ROOM', {
+        wsUsersController
+            .set(id, {
+                socketId: socket.id,
+                contacts,
+                groups,
+            })
+            .broadcastToContacts(id, 'update', {
+                type: clientActions.UPDATE_ROOM,
                 field: 'contacts',
                 where: { id },
                 set: { online: true },
-            }),
-        );
-        wsUsers.emitStatusToRooms(id, true);
+            })
+            .broadcastToGroups(id, 'update', {
+                type: clientActions.UPDATE_GROUP_USER,
+                where: { member_id: id },
+                set: { online: true },
+            });
 
-        socket.emit(
-            'auth',
-            null,
-            constants.socketActions.update('SET_CONTACTS_ONLINE', {
-                set: { contacts: contactsOnline },
-            }),
-        );
-        socket.emit(
-            'warn',
-            constants.socketActions.warn('info', `Bem-vindo, ${user.username}`),
-        );
+        socket.emit('auth', null);
+        socket.emit('update', {
+            type: clientActions.SET_CONTACTS_ONLINE,
+            set: { contacts: wsUsersController.getContactsOnline(id) },
+        });
+        socket.emit('warn', {
+            type: 'info',
+            message: `Bem-vindo, ${user.username}`,
+        });
 
-        /* Event listeners */
+        /* ---------- Event listeners ---------- */
 
         socket.on('is-online', (user: string | string[], callback) => {
             !Array.isArray(user)
-                ? callback(!!wsUsers.get(user))
+                ? callback(wsUsersController.isOnline(user))
                 : callback(
-                      user.map(u => ({ id: u, online: !!wsUsers.get(u) })),
+                      user.map(u => ({
+                          id: u,
+                          online: wsUsersController.isOnline(u),
+                      })),
                   );
         });
 
         socket.on('disconnect', () => {
-            wsUsers.emitStatusToRooms(id, false);
-            wsUsers.emitToContacts(
-                id,
-                'update',
-                constants.socketActions.update('UPDATE_ROOM', {
-                    field: 'contacts',
-                    where: { id },
-                    set: { online: false },
-                }),
-            );
-            wsUsers.remove(id);
+            wsUsersController.remove(id);
         });
     } catch (error) {
+        console.error("error", error)
         socket.emit('auth', error);
         socket.disconnect();
     }
