@@ -1,6 +1,8 @@
 import './api/database';
 import cluster from 'cluster';
 import { cpus } from 'os';
+import { setupMaster } from "@socket.io/sticky"
+import { setupPrimary } from "@socket.io/cluster-adapter"
 import App from './app';
 import { socketConnection } from './api/websocket/connection';
 
@@ -8,6 +10,12 @@ const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0';
 
 if (cluster.isPrimary) {
+    const server = App();
+
+    setupMaster(server.server);
+
+    setupPrimary()
+
     for (let i = 0; i < cpus().length; i++) {
         cluster.fork();
     }
