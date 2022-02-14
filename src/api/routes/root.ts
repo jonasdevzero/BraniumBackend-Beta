@@ -12,6 +12,7 @@ export default function routes(
         reply.status(200).send({ message: 'ok' });
     });
     fastify.get('/uploads/:filename', (req: any, reply) => {
+        reply.raw.setHeader('Content-Disposition', 'attachment');
         reply.sendFile(req.params.filename);
     });
 
