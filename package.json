@@ -37,8 +37,6 @@
   },
   "dependencies": {
     "@sendgrid/mail": "^7.6.0",
-    "@socket.io/cluster-adapter": "^0.1.0",
-    "@socket.io/sticky": "^1.0.1",
     "aws-sdk": "^2.957.0",
     "bcryptjs": "^2.4.3",
     "dotenv": "^10.0.0",
