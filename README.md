@@ -12,7 +12,7 @@ This development project is the [Branium](https://github.com/jonasdevzero/Braniu
 
 ## Contribute
 
-there are several parts you can contribute to this project, such as adding cluster, improving performance, adding and improving tests, asymmetric cryptography, etc. If you want to contribute click on this guide [CONTRIBUTE](https://github.com/jonasdevzero/BraniumBackend/CONTRIBUTE.md).
+there are several parts you can contribute to this project, such as adding cluster, improving performance, adding and improving tests, asymmetric cryptography, etc. If you want to contribute click on this guide [CONTRIBUTE](https://github.com/jonasdevzero/BraniumBackend/blob/master/CONTRIBUTE.md).
 
 ## Contact
 
