@@ -3,7 +3,7 @@ import { Socket } from 'socket.io';
 import { getRepository } from 'typeorm';
 import { constants } from '../../config/constants';
 import { User } from '../models';
-import { WsUsersController } from './users';
+import WsUsersController from '../controllers/WsUsersController';
 
 const clientActions = constants.client.actions;
 
@@ -92,7 +92,7 @@ export async function socketConnection(
             wsUsersController.remove(id);
         });
     } catch (error) {
-        console.error("error", error)
+        console.error('error', error);
         socket.emit('auth', error);
         socket.disconnect();
     }

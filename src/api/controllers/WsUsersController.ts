@@ -1,24 +1,23 @@
-import { Server } from 'socket.io';
 import { constants } from '../../config/constants';
 
 const clientActions = constants.client.actions;
 
-interface WSUser {
+interface WsUser {
     socketId: string;
     contacts: string[];
     groups: string[];
 }
 
 const kWsUsers = Symbol('kWsUsers');
-export class WsUsersController {
-    [kWsUsers]: Map<string, WSUser>;
+export default class WsUsersController {
+    [kWsUsers]: Map<string, WsUser>;
 
     constructor() {
         this[kWsUsers] = new Map();
     }
 
     /**
-     * Find one WSUser by `User ID`
+     * Find one WsUser by `User ID`
      * @param userId - The User ID
      */
     findOne(userId: string) {
@@ -26,18 +25,18 @@ export class WsUsersController {
     }
 
     /**
-     * Sets a new WSUser where the key is the `User ID`
+     * Sets a new WsUser where the key is the `User ID`
      * @param userId - The User ID
-     * @param user - The WSUser that be seted
+     * @param user - The WsUser that be seted
      */
-    set(userId: string, user: WSUser) {
+    set(userId: string, user: WsUser) {
         this[kWsUsers].set(userId, user);
 
         return this;
     }
 
     /**
-     * Removes a WSUser and emit a event to all contacts and group informing the logout
+     * Removes a WsUser and emit a event to all contacts and group informing the logout
      * @param userId - The User ID
      */
     remove(userId: string) {
@@ -66,7 +65,7 @@ export class WsUsersController {
     /* ---------- Contact Methods ---------- */
 
     /**
-     * Add a new contact to the WSUser for webwocket events
+     * Add a new contact to the WsUser for webwocket events
      * @param userId - The `User ID` that adding the new contact
      * @param contactId - The `User ID` of the contact
      */
@@ -111,7 +110,7 @@ export class WsUsersController {
     /* ---------- Group Methods ---------- */
 
     /**
-     * Add a new group to WSUser and join in the socket room
+     * Add a new group to WsUser and join in the socket room
      * @param userId - The User ID that's adding the group
      * @param groupId - The Group ID that's be added
      */
@@ -129,7 +128,7 @@ export class WsUsersController {
     /**
      * Removes a group and leave it
      * @param userId - The User that's removing the group
-     * @param groupId - The group's be removed
+     * @param groupId - The group that's be removed
      */
     removeGroup(userId: string, groupId: string) {
         const wsUser = this.findOne(userId);
