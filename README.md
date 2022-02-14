@@ -8,7 +8,7 @@
 
 ## About
 
-This development project is the [Branium](https://github.com/jonasdevzero/Branium) backend. It is an api made for real-time communications with the client using WebSockets with a focus on performance.
+This project in development is the [Branium](https://github.com/jonasdevzero/Branium) backend. It is an api made for real-time communications with the client using WebSockets with a focus on performance.
 
 ## Contribute
 
