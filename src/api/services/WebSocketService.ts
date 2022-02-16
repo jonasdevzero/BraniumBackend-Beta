@@ -180,13 +180,13 @@ export default {
              *  Sends a WebSocket event to the receiver of the message
              * @param id - The Target of the event
              * @param sender_id - The User ID who sends the message
-             * @param message_id  - The message ID was be deleted
+             * @param bidirectional_id  - The message ID was be deleted
              */
-            deleteOne(id: string, sender_id: string, message_id: string) {
+            deleteOne(id: string, sender_id: string, bidirectional_id: string) {
                 globalThis.ws.to(id).emit('update', {
-                    type: clientActions.REMOVE_ROOM_MESSAGE,
+                    type: clientActions.REMOVE_BIDIRECTIONAL_MESSAGE,
                     field: 'contacts',
-                    where: { id: sender_id, message_id },
+                    where: { id: sender_id, bidirectional_id },
                 });
             },
         },

@@ -184,7 +184,10 @@ export default {
 
                 const viewed_at = new Date();
                 const viewMessages = (m: ContactMessage) =>
-                    contactMessageRepo.update(m.id, { viewed: true, viewed_at });
+                    contactMessageRepo.update(m.id, {
+                        viewed: true,
+                        viewed_at,
+                    });
 
                 await Promise.all([
                     contactRepository.update(contact, { unread_messages: 0 }),
@@ -221,8 +224,11 @@ export default {
     ): Promise<string> {
         return new Promise(async (resolve, reject) => {
             try {
+                const field = target === 'me' ? 'id' : 'bidirectional_id';
+
                 const contactMessageRepo = getRepository(ContactMessage);
-                const message = await contactMessageRepo.findOne(message_id, {
+                const message = await contactMessageRepo.findOne({
+                    where: { [field]: message_id },
                     relations: ['contact'],
                 });
 

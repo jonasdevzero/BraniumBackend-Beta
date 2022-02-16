@@ -21,6 +21,7 @@ export const constants = {
             PUSH_GROUP_USER: 'PUSH_GROUP_USER',
             UPDATE_GROUP_USER: 'UPDATE_GROUP_USER',
             REMOVE_GROUP_USER: 'REMOVE_GROUP_USER',
+            REMOVE_BIDIRECTIONAL_MESSAGE: 'REMOVE_BIDIRECTIONAL_MESSAGE',
         },
     },
 
