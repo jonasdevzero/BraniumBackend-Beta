@@ -225,12 +225,15 @@ export default {
         return new Promise(async (resolve, reject) => {
             try {
                 const field = target === 'me' ? 'id' : 'bidirectional_id';
-
                 const contactMessageRepo = getRepository(ContactMessage);
-                const message = await contactMessageRepo.findOne({
-                    where: { [field]: message_id },
-                    relations: ['contact'],
-                });
+                const message = await contactMessageRepo
+                    .createQueryBuilder('c_message')
+                    .leftJoinAndSelect('c_message.contact', 'c_message_contact')
+                    .where(
+                        `c_message.${field} = :message_id AND c_message_contact.user_id = :user_id`,
+                        { message_id, user_id: id },
+                    )
+                    .getOne();
 
                 if (!message)
                     return reject({

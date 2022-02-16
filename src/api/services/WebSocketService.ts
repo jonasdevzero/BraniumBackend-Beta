@@ -341,6 +341,7 @@ export default {
             delete(group_id: string, message_id: string) {
                 globalThis.ws.to(group_id).emit('update', {
                     type: clientActions.REMOVE_ROOM_MESSAGE,
+                    field: "groups",
                     where: { id: group_id, message_id },
                 });
             },
