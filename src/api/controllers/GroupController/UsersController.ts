@@ -47,10 +47,10 @@ export default {
     async role(req: ServerRequest, reply: ServerReply) {
         try {
             const id = req.user as string;
-            const { role } = req.body;
+            const { group_id, member_id, role } = req.body;
 
             await GroupUsersService.updateRole(id, req.body);
-            WebSocketService.group.users.role(req.body);
+            WebSocketService.group.users.update(group_id, member_id, { role })
 
             reply.status(200).send({ role });
         } catch (error) {

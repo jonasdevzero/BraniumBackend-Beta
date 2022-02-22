@@ -198,14 +198,17 @@ export default {
      * Leave a group
      * @param id The User ID who is leaving the group
      * @param group_id The group who is being leaved
-     * @returns Returns the current group leader_id
+     * @returns Returns an Array[ ]
+     * - [0] - The current group leader
+     * - [1] - A Boolean if is a new leader
      */
-    leaveGroup(id: string, group_id: string): Promise<string> {
+    leaveGroup(id: string, group_id: string): Promise<[string, boolean]> {
         return new Promise(async (resolve, reject) => {
             try {
                 const groupRepository = getRepository(Group);
                 const groupUserRepository = getRepository(GroupUser);
 
+                let new_leader = false;
                 const group = await groupRepository.findOne(group_id, {
                     relations: ['users'],
                 });
@@ -233,6 +236,8 @@ export default {
 
                     if (oldestAdmin) {
                         group.leader_id = oldestAdmin.user_id;
+                        new_leader = true;
+
                         await groupRepository.update(group_id, {
                             leader_id: oldestAdmin.user_id,
                         });
@@ -245,6 +250,8 @@ export default {
 
                         if (oldestUser) {
                             group.leader_id = oldestUser.user_id;
+                            new_leader = true;
+
                             await Promise.all([
                                 groupRepository.update(group_id, {
                                     leader_id: oldestUser.user_id,
@@ -260,7 +267,7 @@ export default {
 
                 await groupUserRepository.delete(member);
 
-                resolve(group.leader_id);
+                resolve([group.leader_id, new_leader]);
             } catch (error) {
                 reject({
                     status: 500,

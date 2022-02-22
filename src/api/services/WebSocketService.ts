@@ -31,14 +31,26 @@ export default {
          * Sends a WebSocket event to all contacts of `id`
          * @param id - The User ID who is sending the update to your contacts
          * @param data - The data that being updated
+         * @param group - Broadcast the event to all group where `id` is in, updating the member of param `id`
          */
-        update(id: string, data: any) {
+        update(id: string, data: any, group?: boolean) {
             wsUsersController.broadcastToContacts(id, 'update', {
                 type: clientActions.UPDATE_ROOM,
                 field: 'contacts',
                 where: { id },
                 set: data,
             });
+            group
+                ? wsUsersController.broadcastToGroups(
+                      id,
+                      'update',
+                      group_id => ({
+                          type: clientActions.UPDATE_GROUP_USER,
+                          where: { id: group_id, member_id: id },
+                          set: data,
+                      }),
+                  )
+                : null;
         },
 
         delete: (id: string) => {},
@@ -279,15 +291,16 @@ export default {
             },
 
             /**
-             * Sends a WebSocket event to all members of the group updating the role of a member
+             * Sends a WebSocket event to all members of the group updating the data of a member
+             * @param group_id - The Group IDwhere the member gonna updated
+             * @param member_id - The User ID of the member that be updated
+             * @param data - The data that be updated
              */
-            role(data: { group_id: string; member_id: string; role: number }) {
-                const { group_id, member_id, role } = data;
-
+            update(group_id: string, member_id: string, data: any) {
                 globalThis.ws.to(group_id).emit('update', {
-                    tyep: clientActions.UPDATE_GROUP_USER,
+                    type: clientActions.UPDATE_GROUP_USER,
                     where: { id: group_id, member_id },
-                    set: { role },
+                    set: data,
                 });
             },
 
@@ -341,7 +354,7 @@ export default {
             delete(group_id: string, message_id: string) {
                 globalThis.ws.to(group_id).emit('update', {
                     type: clientActions.REMOVE_ROOM_MESSAGE,
-                    field: "groups",
+                    field: 'groups',
                     where: { id: group_id, message_id },
                 });
             },

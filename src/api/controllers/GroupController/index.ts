@@ -102,9 +102,18 @@ export default {
             const id = req.user as string;
             const group_id = req.params.id;
 
-            const leader_id = await GroupService.leaveGroup(id, group_id);
+            const [leader_id, new_leader] = await GroupService.leaveGroup(
+                id,
+                group_id,
+            );
             WebSocketService.group.leave(id, group_id);
             WebSocketService.group.update(group_id, { leader_id });
+
+            new_leader
+                ? WebSocketService.group.users.update(group_id, leader_id, {
+                      role: 0,
+                  })
+                : null;
 
             reply.status(200).send({ message: 'ok' });
         } catch (error) {

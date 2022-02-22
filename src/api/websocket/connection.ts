@@ -59,11 +59,11 @@ export async function socketConnection(
                 where: { id },
                 set: { online: true },
             })
-            .broadcastToGroups(id, 'update', {
+            .broadcastToGroups(id, 'update', (group_id) => ( {
                 type: clientActions.UPDATE_GROUP_USER,
-                where: { member_id: id },
+                where: { id: group_id, member_id: id },
                 set: { online: true },
-            });
+            }));
 
         socket.emit('auth', null);
         socket.emit('update', {

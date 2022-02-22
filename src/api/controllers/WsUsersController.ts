@@ -45,11 +45,11 @@ export default class WsUsersController {
             field: 'contacts',
             where: { id: userId },
             set: { online: false },
-        }).broadcastToGroups(userId, 'update', {
+        }).broadcastToGroups(userId, 'update', (group_id: string) => ({
             type: clientActions.UPDATE_GROUP_USER,
-            where: { member_id: userId },
+            where: { id: group_id, member_id: userId },
             set: { online: false },
-        });
+        }));
 
         this[kWsUsers].delete(userId);
     }
@@ -145,13 +145,24 @@ export default class WsUsersController {
      * Broadcast a event to all groups
      * @param userId - The User ID that's sending the event
      * @param event - The event name
-     * @param args - The arguments of the event
+     * @param cb - The callback where the first param is the group ID where the event be sent and returns the action of event
      */
-    broadcastToGroups(userId: string, event: string, action: any) {
+    broadcastToGroups(
+        userId: string,
+        event: string,
+        cb: (group_id: string) => {
+            type: string;
+            where?: { [key: string]: any };
+            set?: any;
+        },
+    ) {
         const wsUser = this.findOne(userId);
         if (!wsUser) return this;
 
-        for (const g of wsUser.groups) globalThis.ws.to(g).emit(event, action);
+        for (const g of wsUser.groups) {
+            const action = cb(g);
+            globalThis.ws.to(g).emit(event, action);
+        }
 
         return this;
     }
