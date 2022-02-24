@@ -4,10 +4,15 @@ import { getRepository } from 'typeorm';
 import { constants } from '../../config/constants';
 import { User } from '../models';
 import WsUsersController from '../controllers/WsUsersController';
+import { randomUUID } from 'crypto';
 
 const clientActions = constants.client.actions;
 
 export const wsUsersController = new WsUsersController();
+
+const callRooms = {} as {
+    [key: string]: Array<string>;
+};
 
 export async function socketConnection(
     socket: Socket,
@@ -59,7 +64,7 @@ export async function socketConnection(
                 where: { id },
                 set: { online: true },
             })
-            .broadcastToGroups(id, 'update', (group_id) => ( {
+            .broadcastToGroups(id, 'update', group_id => ({
                 type: clientActions.UPDATE_GROUP_USER,
                 where: { id: group_id, member_id: id },
                 set: { online: true },
@@ -77,6 +82,8 @@ export async function socketConnection(
 
         /* ---------- Event listeners ---------- */
 
+        socket.on('get-id', (cb: Function) => cb(socket.id));
+
         socket.on('is-online', (user: string | string[], callback) => {
             !Array.isArray(user)
                 ? callback(wsUsersController.isOnline(user))
@@ -86,6 +93,51 @@ export async function socketConnection(
                           online: wsUsersController.isOnline(u),
                       })),
                   );
+        });
+
+        socket.on('call:create', ({ to, callMedia }, callback: Function) => {
+            const callId = randomUUID();
+            callRooms[callId] = [id];
+
+            const toArr = Array.isArray(to) ? to : [to];
+            for (let i = 0; i < toArr.length; i++) {
+                globalThis.ws.to(toArr[i]).emit('update', {
+                    type: 'CALL_REQUEST',
+                    callId,
+                    callMedia,
+                    callerId: id,
+                });
+            }
+
+            callback(callId);
+        });
+
+        socket.on('call:join', (callId: string) => {
+            callRooms[callId].push(id);
+            const users = callRooms[callId].filter(cId => cId !== id);
+            socket.emit('call:users', users);
+        });
+
+        socket.on('call:signal', ({ userToSignal, callerId, signal }) => {
+            globalThis.ws
+                .to(userToSignal)
+                .emit('call:user-join', { signal, callerId });
+        });
+
+        socket.on('call:answer-signal', ({ signal, callerId }) => {
+            globalThis.ws
+                .to(callerId)
+                .emit('call:returned-signal', { signal, id });
+        });
+
+        socket.on('call:leave', (callId: string) => {
+            const users = callRooms[callId].filter(u => u !== id);
+
+            users.forEach(u => globalThis.ws.to(u).emit('call:user-leave', id));
+
+            users.length < 2
+                ? globalThis.ws.to(users[0]).emit('call:end')
+                : (callRooms[callId] = users);
         });
 
         socket.on('disconnect', () => {
