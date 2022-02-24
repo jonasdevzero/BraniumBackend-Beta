@@ -27,6 +27,21 @@ export default {
         }
     },
 
+    async get(req: ServerRequest, reply: ServerReply) {
+        try {
+            const id = req.params.id as string;
+
+            const user = await getRepository(User).findOne(id);
+
+            if (!user)
+                return reply.status(404).send({ message: 'Usuário não encontrado!' })
+
+            reply.status(200).send({ user })
+        } catch (error) {
+            reply.status(500).send({ message: 'Internal Server Error', error });
+        }
+    },
+
     async search(req: ServerRequest, reply: ServerReply) {
         try {
             const id = req.user.toString();

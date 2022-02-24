@@ -18,6 +18,14 @@ export default function userRoutes(
     );
 
     fastify.get(
+        '/:id',
+        {
+            schema: userSchema.get,
+        },
+        userController.get,
+    );
+
+    fastify.get(
         '/search',
         {
             schema: userSchema.search,

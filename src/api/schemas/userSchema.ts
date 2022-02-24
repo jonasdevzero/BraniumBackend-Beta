@@ -28,7 +28,7 @@ const userAuth = {
                     },
                     sender_id: { type: 'string' },
                     receiver_id: { type: 'string' },
-                    created_at: { type: 'string' },                    
+                    created_at: { type: 'string' },
                 },
             },
         },
@@ -114,6 +114,24 @@ export default {
                                 username: { type: 'string' },
                                 picture: { type: 'string', nullable: true },
                             },
+                        },
+                    },
+                },
+            },
+        },
+    },
+
+    get: {
+        response: {
+            200: {
+                type: 'object',
+                properties: {
+                    user: {
+                        type: 'object',
+                        properties: {
+                            id: { type: 'string' },
+                            username: { type: 'string' },
+                            picture: { type: 'string', nullable: true },
                         },
                     },
                 },
