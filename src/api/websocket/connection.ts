@@ -130,14 +130,19 @@ export async function socketConnection(
                 .emit('call:returned-signal', { signal, id });
         });
 
+        socket.on("call:reject", ({ callerId }) => {
+            globalThis.ws.to(callerId).emit("call:rejected", id)
+        })
+
         socket.on('call:leave', (callId: string) => {
-            const users = callRooms[callId].filter(u => u !== id);
+            const users = callRooms[callId]?.filter(u => u !== id) || [];
 
             users.forEach(u => globalThis.ws.to(u).emit('call:user-leave', id));
 
-            users.length < 2
-                ? globalThis.ws.to(users[0]).emit('call:end')
-                : (callRooms[callId] = users);
+            if (users.length < 2) {
+                globalThis.ws.to(users[0]).emit('call:end')
+                delete callRooms[callId]
+            } else callRooms[callId] = users;
         });
 
         socket.on('disconnect', () => {
