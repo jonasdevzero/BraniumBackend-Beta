@@ -86,7 +86,7 @@ export default {
             const picture_url = await GroupService.updatePicture(id, {
                 group_id,
                 picture,
-            });
+            }) || "";
             WebSocketService.group.update(group_id, {
                 picture: picture_url,
             });
